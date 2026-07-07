@@ -1,0 +1,347 @@
+{
+  "name": "MISC",
+  "sourcePak": "MISC.pak.xen",
+  "sourceDir": "gh3texturetool\\misc",
+  "textures": {
+    "tex/0x09178043": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 8192,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "3543607a91056f82cb3273e298bbdd899671fde2fef6bafcd3d7fc88b3c812e6"
+    },
+    "tex/0x0ee30f54": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 139264,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 64,
+      "pngSha256": "04e33836078b668bde584400b62eace3dd54ebcaa529e8b93ebb9cd810de97d9"
+    },
+    "tex/0x12f6945e": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 155648,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "b28a20eefb29240c409e3cf38ca9b7e7454d44f2930abc4ecdb493fafca9ee63"
+    },
+    "tex/0x161b9334": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 286720,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 64,
+      "pngSha256": "7c4ae9fcb5e7c709cbc56295e7693a291905912ddc838f86480bcf1b995e9a10"
+    },
+    "tex/0x274a8106": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 303104,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 64,
+      "pngSha256": "105d09a9139727ba1c4b8bfbd2f31439ee37cc9a83f470f35d2dbaff89291680"
+    },
+    "tex/0x334e08ad": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 319488,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 32,
+      "pngSha256": "ef0b2e209a6a6981b1a9cc3c7e462398e097cee8b231342532dd6caf603a6fd6"
+    },
+    "tex/0x35cb8746": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 335872,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "27e0e76843a8dba5ffbe66718dfa55b7ccf02171080142d207c94ef8ed01a645"
+    },
+    "tex/0x39bb6eb4": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 466944,
+      "size": 65536,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 128,
+      "pngSha256": "ddaafc65b895472d462b4e6dc5ac579dafbc400c3b83d1ba765d3a914776b979"
+    },
+    "tex/0x3fffba87": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 532480,
+      "size": 65536,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 64,
+      "pngSha256": "904ebb88cb80c34f8a8eaee860c093b01619fffcf20e83780bff10516bd16f04"
+    },
+    "tex/0x5517235b": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 598016,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "4139aad1c9c9e711bc19d65800f6f9d4fac67c6b63a9422e10f88f6632dea8f4"
+    },
+    "tex/0x5661103b": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 729088,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "35b5daea9f152a3e252da6999cf0ba8c08ad54e03e3e4e0de6403bc76d7209e8"
+    },
+    "tex/0x5e7f1323": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 860160,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "790070b30f0fb6e8f5cdbf91a1e0c4fa6a1cc68fb40840a65ceae4a8fb8155e9"
+    },
+    "tex/0x6b39c5c7": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 991232,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 32,
+      "pngSha256": "1c41b972be1e5ec22b1c2f06078fbc2d2ab09efbc3867a72e0c147deb4f08f27"
+    },
+    "tex/0x6f2932df": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1007616,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "44bf7b5693fa8a8f934c81ac3bf68dd31088014dd929c45eb35e8c71e6da12b8"
+    },
+    "tex/0x757a57e8": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1138688,
+      "size": 65536,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 64,
+      "pngSha256": "df4d489bfcd29f11ba7739a26e7339f541f03e6f5c7a436443aecc1a3e11482c"
+    },
+    "tex/0x7e1b1464": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1204224,
+      "size": 32768,
+      "fourCC": "DXT5",
+      "w": 256,
+      "h": 32,
+      "pngSha256": "6c8be12f1a8a23799c327f2c7ab6e7fba573b6d6f4cefb3956d6c1217d3c05d7"
+    },
+    "tex/0x7f3e897e": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1236992,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "8369356adfb625e4b7be836aff8a365672b19ff8d2d267e37d2d236be6707299"
+    },
+    "tex/0x7fcc38f6": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1368064,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 32,
+      "pngSha256": "8bc87586d295a50ac263a5dcb636df37de2c747185d98f90891c4b280534115e"
+    },
+    "tex/0x80f51140": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1384448,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "84227fc379701b7cfd64b9d9d99a9ec1c346b66f135c50aa4c9249348839ab14"
+    },
+    "tex/0x950053e5": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1515520,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "e63dd96be4a7cc25681ca69c9902d6a8d449a3190d6c3aabeaa1bce9e019a2d7"
+    },
+    "tex/0x9a2a9b48": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1646592,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "b430e8843fc233788ebefeffd4b43c9baf400b2136a279b1a9ebbcfb0dc2cda4"
+    },
+    "tex/0xa0ba27c8": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1777664,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "b0e2fc29b89db614f0e78d553b8134d60b8dcc784bdc24fe52898d7432466b19"
+    },
+    "tex/0xadbe1ab5": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1908736,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 64,
+      "pngSha256": "e66ff01a74be24a73c272cf67865b2a3911f6ada9b921ab847cced1cbbd8e582"
+    },
+    "tex/0xbc721b11": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 1925120,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "a081892ca90aaabb60343a2152fda699645941e69f45eb61d6cb62663d6caed7"
+    },
+    "tex/0xc89db8d1": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 2056192,
+      "size": 65536,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 64,
+      "pngSha256": "39f5764ec1fb356390a6860cbecaad7c2fc380244570930ed3f9a99f431f7f08"
+    },
+    "tex/0xcaf514f0": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 2121728,
+      "size": 524288,
+      "fourCC": "DXT5",
+      "w": 2048,
+      "h": 256,
+      "pngSha256": "e22dce2da4acf001380c73bc2df610bde9995add6c0b79fa42019f79a5470600"
+    },
+    "tex/0xcf3df703": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 2646016,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 64,
+      "pngSha256": "92ed020ead659284fc1f6e2d728c834e7c6f376d5e6dbb5e579ba96f32c6a385"
+    },
+    "tex/0xd4ad24e4": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 2662400,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "ec6b43306ccdb643789dde509283bfde33d66a07be6b445b0cf7dc245d2a29d1"
+    },
+    "tex/0xd88074c7": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 2793472,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "806ec9fafbf9bd11a131aff05c43daf13673a558490efe724982fdf46a879db2"
+    },
+    "tex/0xe160f8a2": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 2924544,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "514f82451a7d7e9ca00bbd5e90e0fa9f28a87409871639e088aa7777c7ecf9c1"
+    },
+    "tex/0xf1fdabfd": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 3055616,
+      "size": 16384,
+      "fourCC": "DXT5",
+      "w": 128,
+      "h": 64,
+      "pngSha256": "99cca6d4ff18dcab7462654eeb33cd0dd7cbcebd8b2ed1923d4f3194a5f11d3f"
+    },
+    "tex/0xf3fc7ca0": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 3072000,
+      "size": 65536,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 64,
+      "pngSha256": "2192c8cd9b569c592a7164ecf5a0f6e927d0ca530f5d9e427088d197502815c8"
+    },
+    "tex/0xf7a36b1a": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 3137536,
+      "size": 524288,
+      "fourCC": "DXT5",
+      "w": 2048,
+      "h": 256,
+      "pngSha256": "30768a285b2092efaf25c98a6c54886717b77d5b7d3cf61df878a3a96ef41b8f"
+    },
+    "tex/0xf7d2b4a8": {
+      "kind": "tex",
+      "entryIndex": 2,
+      "dataOffset": 3661824,
+      "size": 131072,
+      "fourCC": "DXT5",
+      "w": 512,
+      "h": 256,
+      "pngSha256": "aa46056d36b0f92ba00f481f12abc1848f235a3f2ed6b54c2eef95259606f142"
+    }
+  }
+}
