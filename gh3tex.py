@@ -507,6 +507,125 @@ def material_texture_names(scn_blobs, tex_checksums, tokq, big_endian=True) -> d
     return out
 
 
+def _scn_fmt(d):
+    """(u32, u16, f32) struct formats for an SCN, auto-detected from the 0x0410
+    section tag at 0x20 (GH3 keeps this metadata big-endian on 360/PS3 and even on
+    PC — only pixel DDS is little-endian). None if d is not a 0410 SCN."""
+    if len(d) < 0x24:
+        return None
+    if struct.unpack_from(">H", d, 0x20)[0] == 0x0410:
+        return ">I", ">H", ">f"
+    if struct.unpack_from("<H", d, 0x20)[0] == 0x0410:
+        return "<I", "<H", "<f"
+    return None
+
+
+def _scn_nodes(d):
+    """Walk an SCN (0410 section) into editable nodes: id (+name if known), the
+    textures it references, and coordinate-like transform floats with their absolute
+    byte offsets. Returns None if d is not a 0410 SCN. Backs the scn/*.json pivot
+    dump so users can nudge HUD element positions (e.g. the sidebar) and repack them."""
+    fmts = _scn_fmt(d)
+    if not fmts:
+        return None
+    fmt, fmtH, fmtF = fmts
+    known = bundled_names()
+    count = struct.unpack_from(fmtH, d, 0x22)[0]
+    off, nodes = 0x30, []
+    for _ in range(count):
+        if off + 0xE8 > len(d):
+            break
+        size = struct.unpack_from(fmt, d, off + 0xE4)[0]
+        if not 0x40 <= size <= 0x8000 or off + size > len(d):
+            break
+        nid = struct.unpack_from(fmt, d, off)[0]
+        texs, floats = [], []
+        for j in range(4, size - 3, 4):
+            w = struct.unpack_from(fmt, d, off + j)[0]
+            if isinstance(known.get(w), str):
+                texs.append(known[w])
+            fv = struct.unpack_from(fmtF, d, off + j)[0]
+            # coord-like float: finite, non-zero, transform-range magnitude, not a checksum
+            if fv == fv and abs(fv) != float("inf") and 1e-2 <= abs(fv) <= 1e5 and (abs(fv - round(fv)) < 1e-3 or abs(fv) < 10):
+                floats.append({"off": hex(off + j), "v": fv})   # full float32 value, no rounding
+        node = {"i": len(nodes), "id": f"0x{nid:08x}"}
+        if isinstance(known.get(nid), str):
+            node["name"] = known[nid]
+        if texs:
+            node["textures"] = texs
+        node["floats"] = floats
+        nodes.append(node)
+        off += size
+    return nodes
+
+
+def _scn_label(name, full_name):
+    """Filename stem for an SCN entry: its leaf name (global_gfx.scn -> global_gfx) or hex."""
+    if isinstance(name, str) and name:
+        stem = re.split(r"[\\/]", name)[-1].split(".scn")[0].split(".")[0]
+        stem = re.sub(r"[^A-Za-z0-9_.-]", "_", stem)
+        if stem:
+            return stem
+    return f"0x{full_name:08x}"
+
+
+def _write_scn_pivots(out, scn_entries, log):
+    """Write scn/<name>.json for each SCN entry (list of (index, full_name, data)).
+    Returns {rel_json: {fullName, entryIndex}} for the manifest."""
+    names = bundled_names()
+    man = {}
+    for idx, fn, d in scn_entries:
+        nodes = _scn_nodes(d)
+        if not nodes:
+            continue
+        (out / "scn").mkdir(parents=True, exist_ok=True)
+        rel = f"scn/{_scn_label(names.get(fn), fn)}.json"
+        (out / rel).write_text(json.dumps(
+            {"fullName": f"0x{fn:08x}", "entryIndex": idx, "nodes": nodes}, indent=1))
+        man[rel] = {"fullName": f"0x{fn:08x}", "entryIndex": idx}
+    if man:
+        log(f"wrote {len(man)} SCN pivot file(s) to scn/ (edit node floats, repack applies)")
+    return man
+
+
+def _apply_scn_pivots(work, ent, pair, touched, skipped, log):
+    """Patch edited scn/*.json transform floats back into their SCN entries in place
+    (same size -> no reflow). Returns the number of floats changed. `ent` maps entry
+    index -> mutable bytearray; `pair.entries` supplies the SCN entry indices."""
+    scn_dir = Path(work) / "scn"
+    if not scn_dir.exists():
+        return 0
+    by_fn = {e.full_name: e.index for e in pair.entries if getattr(e, "type", None) == SCN_TYPE}
+    total = 0
+    for jf in sorted(scn_dir.glob("*.json")):
+        try:
+            data = json.loads(jf.read_text())
+        except Exception:
+            skipped.append((f"scn/{jf.name}", "bad json")); continue
+        eidx = by_fn.get(int(data.get("fullName", "0"), 16), data.get("entryIndex"))
+        if eidx is None or eidx not in ent:
+            skipped.append((f"scn/{jf.name}", "scn entry not found")); continue
+        buf = ent[eidx]; changed = 0
+        fmts = _scn_fmt(buf)
+        if not fmts:
+            skipped.append((f"scn/{jf.name}", "not a 0410 SCN")); continue
+        fmtF = fmts[2]
+        for node in data.get("nodes", []):
+            for f in node.get("floats", []):
+                off = int(f["off"], 16) if isinstance(f["off"], str) else int(f["off"])
+                if off + 4 > len(buf):
+                    continue
+                newv = float(f["v"])
+                # dump stores the exact float32 value, so an untouched entry compares
+                # equal (bit-exact round-trip) and only real edits patch.
+                if struct.unpack_from(fmtF, buf, off)[0] != newv:
+                    struct.pack_into(fmtF, buf, off, newv); changed += 1
+        if changed:
+            touched.add(eidx); total += changed
+            log(f"  scn {jf.stem}: patched {changed} transform float(s)")
+    return total
+
+
 _BUNDLED_NAMES = None
 
 
@@ -670,6 +789,9 @@ def unpack(pak_input, out_dir=None, platform=None, log=print, dbg=None, names=No
             log(f"  ...{n} textures")
     if names:
         log(f"named {named}/{n} textures (rest keep their checksum)")
+    manifest["scn"] = _write_scn_pivots(
+        out, [(e.index, e.full_name, e.data) for e in pair.entries
+              if getattr(e, "type", None) == SCN_TYPE], log)
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
     nt = sum(1 for v in manifest["textures"].values() if v["kind"] == "tex")
     log(f"unpacked {n} {platform} textures ({nt} in tex/, {n - nt} in img/) -> {out}")
@@ -710,6 +832,9 @@ def _unpack_ps3(pak_path: Path, out: Path, name: str, log=print, dbg=None, names
             log(f"  ...{n} textures")
     if names:
         log(f"named {named}/{n} textures (rest keep their checksum)")
+    manifest["scn"] = _write_scn_pivots(
+        out, [(e.index, e.full_name, pak.entry_data(e)) for e in pak.entries
+              if getattr(e, "type", None) == SCN_TYPE], log)
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
     nt = sum(1 for v in manifest["textures"].values() if v["kind"] == "tex")
     log(f"unpacked {n} ps3 textures ({nt} in tex/, {n - nt} in img/) -> {out}")
@@ -756,6 +881,38 @@ def _repack_ps3(work: Path, manifest: dict, out_pak, log=print) -> int:
         vram[voff:voff + n] = linear[:n]        # linear LE DXT straight in - no transform
         edited += 1
         log(f"  re-encoded {mkey} ({w}x{h} {fourcc}{f', {mips} mips' if mips > 1 else ''})")
+
+    # apply SCN pivot edits: PS3 SCN containers live in the PAB (big-endian floats)
+    pab = bytearray(pak.pab) if pak.pab else None
+    scn_dir = work / "scn"
+    if scn_dir.exists() and pab is not None:
+        loc = {e.full_name: (e.header_start + e.start - len(pak.pak), e.size)
+               for e in pak.entries if e.type == SCN_TYPE}
+        for jf in sorted(scn_dir.glob("*.json")):
+            try:
+                data = json.loads(jf.read_text())
+            except Exception:
+                skipped.append((f"scn/{jf.name}", "bad json")); continue
+            base_size = loc.get(int(data.get("fullName", "0"), 16))
+            if not base_size:
+                skipped.append((f"scn/{jf.name}", "scn entry not found")); continue
+            base, psize = base_size
+            fmts = _scn_fmt(pab[base:base + psize])
+            if not fmts:
+                skipped.append((f"scn/{jf.name}", "not a 0410 SCN")); continue
+            fmtF = fmts[2]; ch = 0
+            for node in data.get("nodes", []):
+                for f in node.get("floats", []):
+                    off = int(f["off"], 16) if isinstance(f["off"], str) else int(f["off"])
+                    if off + 4 > psize:
+                        continue
+                    newv = float(f["v"])
+                    if struct.unpack_from(fmtF, pab, base + off)[0] != newv:
+                        struct.pack_into(fmtF, pab, base + off, newv); ch += 1
+            if ch:
+                edited += ch
+                log(f"  scn {jf.stem}: patched {ch} transform float(s)")
+
     if not edited:
         log(f"no edited PNGs (unchanged {unchanged}) - nothing to repack"); return 0
     out_pak = Path(out_pak) if out_pak else work / f"{name}_new.PAK.PS3"
@@ -763,7 +920,7 @@ def _repack_ps3(work: Path, manifest: dict, out_pak, log=print) -> int:
     out_pak.parent.mkdir(parents=True, exist_ok=True)
     out_pak.write_bytes(pak.pak)                                  # header pak verbatim
     if pak.pab:
-        out_pak.with_name(f"{stem}.PAB.PS3").write_bytes(pak.pab)  # pab verbatim
+        out_pak.with_name(f"{stem}.PAB.PS3").write_bytes(bytes(pab))  # pab (SCN edits applied)
     out_pak.with_name(f"{stem}_VRAM.PAK.PS3").write_bytes(bytes(vram))
     log(f"repacked {edited} edited textures (unchanged {unchanged}, skipped {len(skipped)}) -> {out_pak}")
     log(f"  wrote: {out_pak.name}" + (f" + {stem}.PAB.PS3" if pak.pab else "") + f" + {stem}_VRAM.PAK.PS3")
@@ -918,6 +1075,8 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
         touched.add(eidx); edited += len(cont_edits)
         for cs, (nw, nh, fc, _lin) in cont_edits.items():
             log(f"  grew tex 0x{cs:08x} -> {nw}x{nh} {fc} (single mip, appended)")
+
+    edited += _apply_scn_pivots(work, ent, pair, touched, skipped, log)
 
     if not edited:
         log(f"no edited PNGs (unchanged {unchanged}) - nothing to repack"); return 0

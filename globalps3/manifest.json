@@ -8790,5 +8790,15 @@
       "container": 439871022,
       "name": "models\\Real_Crowd\\Crowd_HandR_Fist.tex"
     }
+  },
+  "scn": {
+    "scn/0xd4ad2c0d.json": {
+      "fullName": "0xd4ad2c0d",
+      "entryIndex": 18
+    },
+    "scn/0xe7ac134d.json": {
+      "fullName": "0xe7ac134d",
+      "entryIndex": 25
+    }
   }
 }

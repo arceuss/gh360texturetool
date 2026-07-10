@@ -89,6 +89,19 @@
       "container": 1936468063,
       "name": "c:/gh3/data/zones/global/global.tex.ps3"
     },
+    "tex/0x2511d697": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1d6c9c8dc3b52f05e201f7106b64e0e7e94bc0340902bed2489fc3d371de397a",
+      "png": "tex/global/0x2511d697.png",
+      "entryIndex": 9,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 1936468063,
+      "name": "c:/gh3/data/zones/global/global.tex.ps3"
+    },
     "tex/0x281566a3": {
       "kind": "tex",
       "w": 32,
@@ -98,6 +111,19 @@
       "entryIndex": 9,
       "dataOffset": 24576,
       "size": 20480,
+      "fourCC": "DXT1",
+      "container": 1936468063,
+      "name": "c:/gh3/data/zones/global/global.tex.ps3"
+    },
+    "tex/0xe48c5c48": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/global/0xe48c5c48.png",
+      "entryIndex": 9,
+      "dataOffset": 28672,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 1936468063,
       "name": "c:/gh3/data/zones/global/global.tex.ps3"
@@ -232,6 +258,19 @@
       "container": 1080891167,
       "name": "sys_Big_Bolt01_Red"
     },
+    "tex/0xe78e1a35": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "717223d32fa1cb14e73ac31633dee0c738a51dc72eac4870840a1eab9eda4dc2",
+      "png": "tex/global_gfx/sys_whammy2d_starpower.png",
+      "entryIndex": 14,
+      "dataOffset": 1048576,
+      "size": 32768,
+      "fourCC": "DXT5",
+      "container": 1080891167,
+      "name": "sys_whammy2d_starpower"
+    },
     "tex/0xd326251a": {
       "kind": "tex",
       "w": 128,
@@ -346,6 +385,19 @@
       "dataOffset": 1736704,
       "size": 262144,
       "fourCC": "DXT1",
+      "container": 1080891167,
+      "name": "c:/gh3/data/zones/global/global_gfx.tex.ps3"
+    },
+    "tex/0x268e3a28": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "913674e168f64a2a37222dba9abc113a6b3a08e85e834de854582c41b939c36d",
+      "png": "tex/global_gfx/0x268e3a28.png",
+      "entryIndex": 14,
+      "dataOffset": 1556480,
+      "size": 32768,
+      "fourCC": "DXT5",
       "container": 1080891167,
       "name": "c:/gh3/data/zones/global/global_gfx.tex.ps3"
     },
@@ -635,6 +687,32 @@
       "container": 1080891167,
       "name": "sys_BattleGEM_Hammer_RED01"
     },
+    "tex/0xf5ae1214": {
+      "kind": "tex",
+      "w": 64,
+      "h": 64,
+      "pngSha256": "bf90653c2c0f287802e6d06be01a9f18ca22bc62506ccca0b6b85e5571ea769e",
+      "png": "tex/global_gfx/sys_Particle_Star02.png",
+      "entryIndex": 14,
+      "dataOffset": 356352,
+      "size": 24576,
+      "fourCC": "DXT1",
+      "container": 1080891167,
+      "name": "sys_Particle_Star02"
+    },
+    "tex/0x037e6d2c": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "cbe47bdfc22155cbd37e939972d4425c27fdb0ce6e41fcf2370daa5786f86ff8",
+      "png": "tex/global_gfx/sys_whammy2d_blue.png",
+      "entryIndex": 14,
+      "dataOffset": 3215360,
+      "size": 32768,
+      "fourCC": "DXT5",
+      "container": 1080891167,
+      "name": "sys_whammy2d_blue"
+    },
     "tex/0x6aa1b221": {
       "kind": "tex",
       "w": 128,
@@ -765,6 +843,19 @@
       "container": 1080891167,
       "name": "sys_star2d_green"
     },
+    "tex/0xca034a7a": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "cb6e4ab259170c68d21ba65c98b847d480bb081e3f2cf5f4899c245125811a8d",
+      "png": "tex/global_gfx/sys_whammy2d_orange.png",
+      "entryIndex": 14,
+      "dataOffset": 3354624,
+      "size": 32768,
+      "fourCC": "DXT5",
+      "container": 1080891167,
+      "name": "sys_whammy2d_orange"
+    },
     "tex/0xcb2dd2be": {
       "kind": "tex",
       "w": 128,
@@ -882,6 +973,19 @@
       "container": 1080891167,
       "name": "c:/gh3/data/zones/global/global_gfx.tex.ps3"
     },
+    "tex/0x44e7b154": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "5a7f94f31cb45a85fea2efcda4247c79c477c145e7e63d88f0f312d3d1c02554",
+      "png": "tex/global_gfx/sys_particle_spark01.png",
+      "entryIndex": 14,
+      "dataOffset": 2895872,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 1080891167,
+      "name": "sys_particle_spark01"
+    },
     "tex/0xb47133c1": {
       "kind": "tex",
       "w": 32,
@@ -907,6 +1011,19 @@
       "fourCC": "DXT5",
       "container": 1080891167,
       "name": "c:/gh3/data/zones/global/global_gfx.tex.ps3"
+    },
+    "tex/0xec463e7a": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "bfb44564f0f0a3303e32af79e427e05ea651ec9d8e75feb259deeae9a84539c0",
+      "png": "tex/global_gfx/sys_whammy2d_yellow.png",
+      "entryIndex": 14,
+      "dataOffset": 4698112,
+      "size": 32768,
+      "fourCC": "DXT5",
+      "container": 1080891167,
+      "name": "sys_whammy2d_yellow"
     },
     "tex/0xd6c32766": {
       "kind": "tex",
@@ -946,6 +1063,19 @@
       "fourCC": "DXT5",
       "container": 1080891167,
       "name": "sys_NowBar_Head_RedL"
+    },
+    "tex/0x45c726d2": {
+      "kind": "tex",
+      "w": 64,
+      "h": 64,
+      "pngSha256": "85987eff6c070265e0cd1a00093f7079c2909b73b167b67c75b92a9ddd8f10ee",
+      "png": "tex/global_gfx/sys_Particle_Star01.png",
+      "entryIndex": 14,
+      "dataOffset": 4837376,
+      "size": 28672,
+      "fourCC": "DXT5",
+      "container": 1080891167,
+      "name": "sys_Particle_Star01"
     },
     "tex/0x5f17c7e7": {
       "kind": "tex",
@@ -1311,6 +1441,32 @@
       "container": 1080891167,
       "name": "sys_BattleGEM_Green01"
     },
+    "tex/0x176bd3e9": {
+      "kind": "tex",
+      "w": 16,
+      "h": 16,
+      "pngSha256": "b1053f89bb82a79f8d33fe961fb79364943688d6fa733b1de98be88f04359cbb",
+      "png": "tex/global_gfx/sys_mtl.png",
+      "entryIndex": 14,
+      "dataOffset": 4984832,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 1080891167,
+      "name": "sys_mtl"
+    },
+    "tex/0x6c97b6c6": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "95b443b63b963bfe10f80932bb2ca768a3c1f72a0cb7d73369af31cf02a7f7f7",
+      "png": "tex/global_gfx/sys_whammy2d_red.png",
+      "entryIndex": 14,
+      "dataOffset": 5173248,
+      "size": 32768,
+      "fourCC": "DXT5",
+      "container": 1080891167,
+      "name": "sys_whammy2d_red"
+    },
     "tex/0xdf92d29e": {
       "kind": "tex",
       "w": 128,
@@ -1554,6 +1710,32 @@
       "container": 2864952786,
       "name": "c:/gh3/data/models/lighthousings/go_nohousing01/go_nohousing01.tex.ps3"
     },
+    "tex/0xe48c5c48_113": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_nohousing01/0xe48c5c48.png",
+      "entryIndex": 113,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2864952786,
+      "name": "c:/gh3/data/models/lighthousings/go_nohousing01/go_nohousing01.tex.ps3"
+    },
+    "tex/0x21fec6d9": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_nohousing01/0x21fec6d9.png",
+      "entryIndex": 113,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2864952786,
+      "name": "c:/gh3/data/models/lighthousings/go_nohousing01/go_nohousing01.tex.ps3"
+    },
     "tex/0x18997782_115": {
       "kind": "tex",
       "w": 32,
@@ -1576,6 +1758,32 @@
       "entryIndex": 115,
       "dataOffset": 24576,
       "size": 36864,
+      "fourCC": "DXT1",
+      "container": 1588653081,
+      "name": "c:/gh3/data/models/lighthousings/go_nohousing01_flare01/go_nohousing01_flare01.tex.ps3"
+    },
+    "tex/0xe48c5c48_115": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_nohousing01_flare01/0xe48c5c48.png",
+      "entryIndex": 115,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 1588653081,
+      "name": "c:/gh3/data/models/lighthousings/go_nohousing01_flare01/go_nohousing01_flare01.tex.ps3"
+    },
+    "tex/0x21fec6d9_115": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_nohousing01_flare01/0x21fec6d9.png",
+      "entryIndex": 115,
+      "dataOffset": 45056,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 1588653081,
       "name": "c:/gh3/data/models/lighthousings/go_nohousing01_flare01/go_nohousing01_flare01.tex.ps3"
@@ -1619,6 +1827,32 @@
       "container": 3114895619,
       "name": "c:/gh3/data/models/lighthousings/go_nohousing01_smallflare01/go_nohousing01_smallflare01.tex.ps3"
     },
+    "tex/0xe48c5c48_117": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_nohousing01_smallflare01/0xe48c5c48.png",
+      "entryIndex": 117,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 3114895619,
+      "name": "c:/gh3/data/models/lighthousings/go_nohousing01_smallflare01/go_nohousing01_smallflare01.tex.ps3"
+    },
+    "tex/0x21fec6d9_117": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_nohousing01_smallflare01/0x21fec6d9.png",
+      "entryIndex": 117,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 3114895619,
+      "name": "c:/gh3/data/models/lighthousings/go_nohousing01_smallflare01/go_nohousing01_smallflare01.tex.ps3"
+    },
     "tex/0xf4f1e9d2_117": {
       "kind": "tex",
       "w": 256,
@@ -1654,6 +1888,32 @@
       "entryIndex": 119,
       "dataOffset": 24576,
       "size": 36864,
+      "fourCC": "DXT1",
+      "container": 3171855317,
+      "name": "c:/gh3/data/models/lighthousings/go_barnhousing01/go_barnhousing01.tex.ps3"
+    },
+    "tex/0xe48c5c48_119": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_barnhousing01/0xe48c5c48.png",
+      "entryIndex": 119,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 3171855317,
+      "name": "c:/gh3/data/models/lighthousings/go_barnhousing01/go_barnhousing01.tex.ps3"
+    },
+    "tex/0x21fec6d9_119": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_barnhousing01/0x21fec6d9.png",
+      "entryIndex": 119,
+      "dataOffset": 45056,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 3171855317,
       "name": "c:/gh3/data/models/lighthousings/go_barnhousing01/go_barnhousing01.tex.ps3"
@@ -1697,6 +1957,32 @@
       "container": 2671229112,
       "name": "c:/gh3/data/models/lighthousings/go_lighthousing01/go_lighthousing01.tex.ps3"
     },
+    "tex/0xe48c5c48_121": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_lighthousing01/0xe48c5c48.png",
+      "entryIndex": 121,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2671229112,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing01/go_lighthousing01.tex.ps3"
+    },
+    "tex/0x21fec6d9_121": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_lighthousing01/0x21fec6d9.png",
+      "entryIndex": 121,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2671229112,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing01/go_lighthousing01.tex.ps3"
+    },
     "tex/0xf4f1e9d2_121": {
       "kind": "tex",
       "w": 256,
@@ -1732,6 +2018,32 @@
       "entryIndex": 123,
       "dataOffset": 24576,
       "size": 36864,
+      "fourCC": "DXT1",
+      "container": 2786233553,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing01_smallflare01/go_lighthousing01_smallflare01.tex.ps3"
+    },
+    "tex/0xe48c5c48_123": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_lighthousing01_smallflare01/0xe48c5c48.png",
+      "entryIndex": 123,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2786233553,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing01_smallflare01/go_lighthousing01_smallflare01.tex.ps3"
+    },
+    "tex/0x21fec6d9_123": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_lighthousing01_smallflare01/0x21fec6d9.png",
+      "entryIndex": 123,
+      "dataOffset": 45056,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 2786233553,
       "name": "c:/gh3/data/models/lighthousings/go_lighthousing01_smallflare01/go_lighthousing01_smallflare01.tex.ps3"
@@ -1775,6 +2087,32 @@
       "container": 2926771029,
       "name": "c:/gh3/data/models/lighthousings/go_lighthousing02/go_lighthousing02.tex.ps3"
     },
+    "tex/0xe48c5c48_125": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_lighthousing02/0xe48c5c48.png",
+      "entryIndex": 125,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2926771029,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing02/go_lighthousing02.tex.ps3"
+    },
+    "tex/0x21fec6d9_125": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_lighthousing02/0x21fec6d9.png",
+      "entryIndex": 125,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2926771029,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing02/go_lighthousing02.tex.ps3"
+    },
     "tex/0xf4f1e9d2_125": {
       "kind": "tex",
       "w": 256,
@@ -1810,6 +2148,32 @@
       "entryIndex": 127,
       "dataOffset": 24576,
       "size": 36864,
+      "fourCC": "DXT1",
+      "container": 101525191,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing02_smallflare01/go_lighthousing02_smallflare01.tex.ps3"
+    },
+    "tex/0xe48c5c48_127": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_lighthousing02_smallflare01/0xe48c5c48.png",
+      "entryIndex": 127,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 101525191,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing02_smallflare01/go_lighthousing02_smallflare01.tex.ps3"
+    },
+    "tex/0x21fec6d9_127": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_lighthousing02_smallflare01/0x21fec6d9.png",
+      "entryIndex": 127,
+      "dataOffset": 45056,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 101525191,
       "name": "c:/gh3/data/models/lighthousings/go_lighthousing02_smallflare01/go_lighthousing02_smallflare01.tex.ps3"
@@ -1853,6 +2217,32 @@
       "container": 2987348455,
       "name": "c:/gh3/data/models/lighthousings/go_lighthousing02_small01/go_lighthousing02_small01.tex.ps3"
     },
+    "tex/0xe48c5c48_129": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_lighthousing02_small01/0xe48c5c48.png",
+      "entryIndex": 129,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2987348455,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing02_small01/go_lighthousing02_small01.tex.ps3"
+    },
+    "tex/0x21fec6d9_129": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "30a5faf4033e50a90a2878943dfcf4cc66c8feff3fe92c17dc8c7e7a30e9e845",
+      "png": "tex/go_lighthousing02_small01/0x21fec6d9.png",
+      "entryIndex": 129,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2987348455,
+      "name": "c:/gh3/data/models/lighthousings/go_lighthousing02_small01/go_lighthousing02_small01.tex.ps3"
+    },
     "tex/0xf4f1e9d2_129": {
       "kind": "tex",
       "w": 256,
@@ -1866,7 +2256,7 @@
       "container": 2987348455,
       "name": "c:/gh3/data/models/lighthousings/go_lighthousing02_small01/go_lighthousing02_small01.tex.ps3"
     },
-    "tex/0x21fec6d9": {
+    "tex/0x21fec6d9_131": {
       "kind": "tex",
       "w": 32,
       "h": 32,
@@ -1875,6 +2265,19 @@
       "entryIndex": 131,
       "dataOffset": 151552,
       "size": 20480,
+      "fourCC": "DXT1",
+      "container": 3428526451,
+      "name": "c:/gh3/data/models/lighthousings/go_tankhousing01/go_tankhousing01.tex.ps3"
+    },
+    "tex/0x281566a3_131": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/go_tankhousing01/0x281566a3.png",
+      "entryIndex": 131,
+      "dataOffset": 155648,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 3428526451,
       "name": "c:/gh3/data/models/lighthousings/go_tankhousing01/go_tankhousing01.tex.ps3"
@@ -1905,6 +2308,19 @@
       "container": 3428526451,
       "name": "c:/gh3/data/models/lighthousings/go_tankhousing01/go_tankhousing01.tex.ps3"
     },
+    "tex/0x18997782_131": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/go_tankhousing01/0x18997782.png",
+      "entryIndex": 131,
+      "dataOffset": 315392,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 3428526451,
+      "name": "c:/gh3/data/models/lighthousings/go_tankhousing01/go_tankhousing01.tex.ps3"
+    },
     "tex/0xc9bfed3c": {
       "kind": "tex",
       "w": 512,
@@ -1914,6 +2330,19 @@
       "entryIndex": 131,
       "dataOffset": 331776,
       "size": 200704,
+      "fourCC": "DXT1",
+      "container": 3428526451,
+      "name": "c:/gh3/data/models/lighthousings/go_tankhousing01/go_tankhousing01.tex.ps3"
+    },
+    "tex/0xe48c5c48_131": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/go_tankhousing01/0xe48c5c48.png",
+      "entryIndex": 131,
+      "dataOffset": 516096,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 3428526451,
       "name": "c:/gh3/data/models/lighthousings/go_tankhousing01/go_tankhousing01.tex.ps3"
@@ -8712,6 +9141,19 @@
       "container": 2451146025,
       "name": "models\\Real_Crowd\\Crowd_HandL_Lighter.tex"
     },
+    "tex/0x281566a3_697": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandL_Lighter/0x281566a3.png",
+      "entryIndex": 697,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2451146025,
+      "name": "models\\Real_Crowd\\Crowd_HandL_Lighter.tex"
+    },
     "tex/0x2ec88aa8": {
       "kind": "tex",
       "w": 128,
@@ -8721,6 +9163,19 @@
       "entryIndex": 697,
       "dataOffset": 24576,
       "size": 36864,
+      "fourCC": "DXT1",
+      "container": 2451146025,
+      "name": "models\\Real_Crowd\\Crowd_HandL_Lighter.tex"
+    },
+    "tex/0xe48c5c48_697": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/Crowd_HandL_Lighter/0xe48c5c48.png",
+      "entryIndex": 697,
+      "dataOffset": 45056,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 2451146025,
       "name": "models\\Real_Crowd\\Crowd_HandL_Lighter.tex"
@@ -8738,6 +9193,19 @@
       "container": 1494703958,
       "name": "models\\Real_Crowd\\Crowd_HandL_Rock.tex"
     },
+    "tex/0x281566a3_699": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandL_Rock/0x281566a3.png",
+      "entryIndex": 699,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 1494703958,
+      "name": "models\\Real_Crowd\\Crowd_HandL_Rock.tex"
+    },
     "tex/0x2ec88aa8_699": {
       "kind": "tex",
       "w": 128,
@@ -8747,6 +9215,19 @@
       "entryIndex": 699,
       "dataOffset": 24576,
       "size": 36864,
+      "fourCC": "DXT1",
+      "container": 1494703958,
+      "name": "models\\Real_Crowd\\Crowd_HandL_Rock.tex"
+    },
+    "tex/0xe48c5c48_699": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/Crowd_HandL_Rock/0xe48c5c48.png",
+      "entryIndex": 699,
+      "dataOffset": 45056,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 1494703958,
       "name": "models\\Real_Crowd\\Crowd_HandL_Rock.tex"
@@ -8764,6 +9245,19 @@
       "container": 2182509542,
       "name": "models\\Real_Crowd\\Crowd_HandL_Clap.tex"
     },
+    "tex/0x281566a3_701": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandL_Clap/0x281566a3.png",
+      "entryIndex": 701,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 2182509542,
+      "name": "models\\Real_Crowd\\Crowd_HandL_Clap.tex"
+    },
     "tex/0x2ec88aa8_701": {
       "kind": "tex",
       "w": 128,
@@ -8773,6 +9267,19 @@
       "entryIndex": 701,
       "dataOffset": 24576,
       "size": 36864,
+      "fourCC": "DXT1",
+      "container": 2182509542,
+      "name": "models\\Real_Crowd\\Crowd_HandL_Clap.tex"
+    },
+    "tex/0xe48c5c48_701": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/Crowd_HandL_Clap/0xe48c5c48.png",
+      "entryIndex": 701,
+      "dataOffset": 45056,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 2182509542,
       "name": "models\\Real_Crowd\\Crowd_HandL_Clap.tex"
@@ -8803,6 +9310,32 @@
       "container": 592467829,
       "name": "models\\Real_Crowd\\Crowd_HandL_Fist.tex"
     },
+    "tex/0xd729d3b1_703": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandL_Fist/0xd729d3b1.png",
+      "entryIndex": 703,
+      "dataOffset": 8192,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 592467829,
+      "name": "models\\Real_Crowd\\Crowd_HandL_Fist.tex"
+    },
+    "tex/0xe7a5c290": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandL_Fist/0xe7a5c290.png",
+      "entryIndex": 703,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 592467829,
+      "name": "models\\Real_Crowd\\Crowd_HandL_Fist.tex"
+    },
     "tex/0x18997782_705": {
       "kind": "tex",
       "w": 32,
@@ -8812,6 +9345,19 @@
       "entryIndex": 705,
       "dataOffset": 4096,
       "size": 20480,
+      "fourCC": "DXT1",
+      "container": 3707252547,
+      "name": "models\\Real_Crowd\\Crowd_HandR_Lighter.tex"
+    },
+    "tex/0x281566a3_705": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandR_Lighter/0x281566a3.png",
+      "entryIndex": 705,
+      "dataOffset": 8192,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 3707252547,
       "name": "models\\Real_Crowd\\Crowd_HandR_Lighter.tex"
@@ -8829,6 +9375,19 @@
       "container": 3707252547,
       "name": "models\\Real_Crowd\\Crowd_HandR_Lighter.tex"
     },
+    "tex/0xe48c5c48_705": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/Crowd_HandR_Lighter/0xe48c5c48.png",
+      "entryIndex": 705,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 3707252547,
+      "name": "models\\Real_Crowd\\Crowd_HandR_Lighter.tex"
+    },
     "tex/0x18997782_707": {
       "kind": "tex",
       "w": 32,
@@ -8838,6 +9397,19 @@
       "entryIndex": 707,
       "dataOffset": 4096,
       "size": 20480,
+      "fourCC": "DXT1",
+      "container": 1618013709,
+      "name": "models\\Real_Crowd\\Crowd_HandR_Rock.tex"
+    },
+    "tex/0x281566a3_707": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandR_Rock/0x281566a3.png",
+      "entryIndex": 707,
+      "dataOffset": 8192,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 1618013709,
       "name": "models\\Real_Crowd\\Crowd_HandR_Rock.tex"
@@ -8855,6 +9427,19 @@
       "container": 1618013709,
       "name": "models\\Real_Crowd\\Crowd_HandR_Rock.tex"
     },
+    "tex/0xe48c5c48_707": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/Crowd_HandR_Rock/0xe48c5c48.png",
+      "entryIndex": 707,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 1618013709,
+      "name": "models\\Real_Crowd\\Crowd_HandR_Rock.tex"
+    },
     "tex/0x18997782_709": {
       "kind": "tex",
       "w": 32,
@@ -8864,6 +9449,19 @@
       "entryIndex": 709,
       "dataOffset": 4096,
       "size": 20480,
+      "fourCC": "DXT1",
+      "container": 3144794813,
+      "name": "models\\Real_Crowd\\Crowd_HandR_Clap.tex"
+    },
+    "tex/0x281566a3_709": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandR_Clap/0x281566a3.png",
+      "entryIndex": 709,
+      "dataOffset": 8192,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 3144794813,
       "name": "models\\Real_Crowd\\Crowd_HandR_Clap.tex"
@@ -8881,6 +9479,19 @@
       "container": 3144794813,
       "name": "models\\Real_Crowd\\Crowd_HandR_Clap.tex"
     },
+    "tex/0xe48c5c48_709": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/Crowd_HandR_Clap/0xe48c5c48.png",
+      "entryIndex": 709,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 3144794813,
+      "name": "models\\Real_Crowd\\Crowd_HandR_Clap.tex"
+    },
     "tex/0x18997782_711": {
       "kind": "tex",
       "w": 32,
@@ -8890,6 +9501,19 @@
       "entryIndex": 711,
       "dataOffset": 4096,
       "size": 20480,
+      "fourCC": "DXT1",
+      "container": 439871022,
+      "name": "models\\Real_Crowd\\Crowd_HandR_Fist.tex"
+    },
+    "tex/0x281566a3_711": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "f7b9da3b59df7c5a2d0ea2f7ce260c20fef37a0f550d150075a7f3c08b50a7de",
+      "png": "tex/Crowd_HandR_Fist/0x281566a3.png",
+      "entryIndex": 711,
+      "dataOffset": 8192,
+      "size": 16384,
       "fourCC": "DXT1",
       "container": 439871022,
       "name": "models\\Real_Crowd\\Crowd_HandR_Fist.tex"
@@ -8906,6 +9530,29 @@
       "fourCC": "DXT1",
       "container": 439871022,
       "name": "models\\Real_Crowd\\Crowd_HandR_Fist.tex"
+    },
+    "tex/0xe48c5c48_711": {
+      "kind": "tex",
+      "w": 32,
+      "h": 32,
+      "pngSha256": "1fe0c2eb0311a77324ba8aac7a065696321161fbec7a9e273928ab97d2cd5b98",
+      "png": "tex/Crowd_HandR_Fist/0xe48c5c48.png",
+      "entryIndex": 711,
+      "dataOffset": 45056,
+      "size": 16384,
+      "fourCC": "DXT1",
+      "container": 439871022,
+      "name": "models\\Real_Crowd\\Crowd_HandR_Fist.tex"
+    }
+  },
+  "scn": {
+    "scn/0xd4ad2c0d.json": {
+      "fullName": "0xd4ad2c0d",
+      "entryIndex": 10
+    },
+    "scn/0xe7ac134d.json": {
+      "fullName": "0xe7ac134d",
+      "entryIndex": 15
     }
   }
 }
