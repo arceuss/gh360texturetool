@@ -39,8 +39,14 @@ def main(argv):
     except Exception as e:
         print(f"  ERROR: {e}"); return 1
     if n:
-        print("\nDone. Copy the *_new.pak.xen + *_new.pab.xen into the game's DATA folder")
-        print("(global -> DATA\\ZONES, MISC -> DATA\\MISC). No recompression needed.")
+        import json as _json
+        plat = _json.loads((Path(work) / "manifest.json").read_text()).get("platform", "xbox")
+        if plat == "ps3":
+            print("\nDone. Rename the *_new.PAK.PS3 / *_new.PAB.PS3 / *_new_VRAM.PAK.PS3 over the")
+            print("originals in PS3_GAME\\USRDIR\\DATA\\ZONES (drop the _new). No compression on PS3.")
+        else:
+            print("\nDone. Copy the *_new.pak.xen + *_new.pab.xen into the game's DATA folder")
+            print("(global -> DATA\\ZONES, MISC -> DATA\\MISC). No recompression needed.")
     return 0
 
 

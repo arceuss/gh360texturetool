@@ -13,7 +13,7 @@ baseline hash, so repack re-encodes ONLY what you changed and leaves the rest
 byte-identical.
 """
 from __future__ import annotations
-import hashlib, io, json, struct, sys, zlib
+import hashlib, io, json, re, struct, sys, zlib
 from pathlib import Path
 from PIL import Image
 
@@ -21,14 +21,18 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from tools.x360pak._consult_single import (
-    SplitPak, XboxTex, TYPE_TEX,
+    SplitPak, XboxTex, TYPE_TEX, PakEntry,
     dds_info, top_mip_size, xbox_storage_size,
     tile_xbox360_dxt, untile_xbox360_dxt, write_dds_bytes, DDS_HEADER_SIZE, u16be,
 )
 
 TYPE_IMG = 0xdad5e950
+TYPE_IMV = 0xb065c9a2            # qk('.imv') - PS3 img pixel data (in the VRAM pak)
+TYPE_TVX = 0xea151f1c            # qk('.tvx') - PS3 tex pixel data (in the VRAM pak)
+TYPE_LAST = 0x2cb3ef3b
 PIL_PIXFMT = {"DXT1": "DXT1", "DXT5": "DXT5"}
 _IMG_TYPE_FOURCC = {0x52: "DXT1", 0x53: "DXT5", 0x54: "DXT5", 0x71: "ATI2"}
+_PS3_FMT_FOURCC = {1: "DXT1", 2: "DXT1", 5: "DXT5"}   # header byte 0x16 (also bpp@0x15: 4/8)
 _CHUNK_MAGIC = b"\x00\x20\x00\x03\x00\x00\x00\x01"
 
 
@@ -89,6 +93,126 @@ def png_to_dds_bytes(png_path: Path, fourcc: str) -> bytes:
 
 
 # --------------------------------------------------------------------------- #
+# PS3 (RSX): NAME.PAK.PS3 [+ NAME.PAB.PS3] + NAME_VRAM.PAK.PS3, uncompressed.
+# Pixels are plain LINEAR little-endian DXT (Pillow-native, no tiling/swap).
+# The VRAM pak is self-describing: 32-byte big-endian entry headers (same
+# layout as pak headers, full_name at word 6), payload at header_off + start.
+# .img headers (0x80 bytes, in PAB) carry dims @+8/+A BE and format @+0x16
+# (1/2=DXT1, 5=DXT5). .tex (FACECAA7) containers hold 0x30-byte records:
+# checksum@+4, w/h@+8/+A, mips@+0x14, fmt@+0x16, tvxOff@+0x1C, size@+0x20,
+# with tvxOff indexing into the paired .tvx VRAM payload (top mip first).
+# --------------------------------------------------------------------------- #
+class Ps3Pak:
+    def __init__(self, pak_path: Path):
+        self.pak_path = pak_path
+        stem = pak_path.name
+        low = stem.lower()
+        assert low.endswith('.pak.ps3')
+        self.name = stem[:-8].rstrip('.')                     # e.g. GLOBAL
+        self.pab_path = pak_path.with_name(f"{self.name}.PAB.PS3")
+        self.vram_path = pak_path.with_name(f"{self.name}_VRAM.PAK.PS3")
+        self.pak = pak_path.read_bytes()
+        self.pab = self.pab_path.read_bytes() if self.pab_path.exists() else b""
+        self.vram = self.vram_path.read_bytes() if self.vram_path.exists() else b""
+        self.entries = []
+        for off in range(0, len(self.pak), 32):
+            e = PakEntry.from_header(len(self.entries), off, self.pak[off:off+32])
+            self.entries.append(e)
+            if e.is_last:
+                break
+        # VRAM directory: full_name -> (absolute payload offset, size)
+        self.vram_dir = {}
+        off = 0
+        while off + 32 <= len(self.vram):
+            t, st, sz = struct.unpack_from(">3I", self.vram, off)
+            if t == TYPE_LAST:
+                break
+            fn = struct.unpack_from(">I", self.vram, off + 24)[0]
+            if t in (TYPE_IMV, TYPE_TVX):
+                self.vram_dir[(t, fn)] = (off + st, sz)
+            off += 32
+
+    def entry_data(self, e) -> bytes:
+        """Data for a PAB-resident entry (img headers, tex containers...)."""
+        if self.pab:
+            off = e.header_start + e.start - len(self.pak)
+        else:
+            off = e.header_start + e.start                    # monolithic zone pak
+        src = self.pab if self.pab else self.pak
+        return src[off:off + e.size]
+
+
+def ps3_img_info(hdr: bytes):
+    """(w, h, mips, fourcc) from a PS3 0x80-byte .img header."""
+    w, h = u16be(hdr, 8), u16be(hdr, 10)
+    mips = hdr[0x14] if len(hdr) > 0x16 else 1
+    fourcc = _PS3_FMT_FOURCC.get(hdr[0x16], "?") if len(hdr) > 0x16 else "?"
+    return w, h, mips, fourcc
+
+
+def ps3_tex_records(container: bytes):
+    """Yield (checksum, w, h, mips, fourcc, tvx_off, size) from a FACECAA7 tex."""
+    if len(container) < 0x10 or container[:4] != b"\xfa\xce\xca\xa7":
+        return
+    count = u16be(container, 6)
+    recs_off = struct.unpack_from(">I", container, 8)[0]
+    for i in range(count):
+        r = container[recs_off + i*0x30: recs_off + (i+1)*0x30]
+        if len(r) < 0x30:
+            break
+        checksum = struct.unpack_from(">I", r, 4)[0]
+        w, h = u16be(r, 8), u16be(r, 10)
+        mips, fourcc = r[0x14], _PS3_FMT_FOURCC.get(r[0x16], "?")
+        tvx_off = struct.unpack_from(">I", r, 0x1C)[0]
+        size = struct.unpack_from(">I", r, 0x20)[0]
+        yield checksum, w, h, mips, fourcc, tvx_off, size
+
+
+def _ps3_image(linear: bytes, w: int, h: int, fourcc: str):
+    try:
+        return Image.open(io.BytesIO(write_dds_bytes(w, h, fourcc, linear))).convert("RGBA")
+    except Exception:
+        return None
+
+
+def iter_textures_ps3(pak: Ps3Pak):
+    """Yield (key, kind, w, h, PIL_image, repack_info) for a PS3 pak.
+    repack_info records the absolute VRAM-file offset + byte count to overwrite."""
+    for e in pak.entries:
+        if e.type == TYPE_IMG:
+            hdr = pak.entry_data(e)
+            w, h, mips, fourcc = ps3_img_info(hdr)
+            loc = pak.vram_dir.get((TYPE_IMV, e.full_name))
+            if fourcc not in PIL_PIXFMT or not loc or not w or not h:
+                continue
+            voff, vsz = loc
+            top = top_mip_size(w, h, fourcc)
+            if vsz < top or voff + top > len(pak.vram):
+                continue
+            img = _ps3_image(pak.vram[voff:voff + top], w, h, fourcc)
+            if img is not None:
+                yield (e.full_name, "img", w, h, img,
+                       {"vramOffset": voff, "size": top, "fourCC": fourcc})
+        elif e.type == TYPE_TEX:
+            loc = pak.vram_dir.get((TYPE_TVX, e.full_name))
+            if not loc:
+                continue
+            tvx_off, tvx_sz = loc
+            for checksum, w, h, mips, fourcc, roff, rsz in ps3_tex_records(pak.entry_data(e)):
+                if fourcc not in PIL_PIXFMT or not w or not h:
+                    continue
+                top = top_mip_size(w, h, fourcc)
+                if rsz < top or roff + top > tvx_sz:
+                    continue
+                voff = tvx_off + roff
+                img = _ps3_image(pak.vram[voff:voff + top], w, h, fourcc)
+                if img is not None:
+                    yield (checksum, "tex", w, h, img,
+                           {"vramOffset": voff, "size": top, "fourCC": fourcc,
+                            "container": e.full_name})
+
+
+# --------------------------------------------------------------------------- #
 # platform detection + per-platform texture decode
 # --------------------------------------------------------------------------- #
 def detect_platform(pair: SplitPak) -> str:
@@ -144,7 +268,211 @@ def iter_textures(pair: SplitPak, platform: str):
                 if len(r.data) < xbox_storage_size(r.width, r.height, r.fourcc):
                     continue
                 yield (r.checksum, "tex", r.width, r.height, _xbox_image(r.data, r.width, r.height, r.fourcc),
-                       {"entryIndex": e.index, "dataOffset": r.data_offset, "size": r.size, "fourCC": r.fourcc})
+                       {"entryIndex": e.index, "dataOffset": r.data_offset, "size": r.size, "fourCC": r.fourcc,
+                        "container": e.full_name})
+
+
+# --------------------------------------------------------------------------- #
+# real texture names (dbg.pak debug-checksum table)
+# --------------------------------------------------------------------------- #
+def load_dbg_names(dbg_path) -> dict:
+    """Parse a dbg.pak (any platform; decompresses 360 automatically) into a
+    {checksum: name} map. dbg entries are plaintext '0xXXXXXXXX <path/name>' lines."""
+    data = Path(dbg_path).read_bytes()
+    try:
+        data = decompress_pak_data(data)
+    except Exception:
+        pass
+    names = {}
+    for m in re.finditer(rb'0x([0-9a-fA-F]{8}) ([ -~]{1,220}?)[\r\n]', data):
+        names.setdefault(int(m.group(1), 16), m.group(2).decode('latin1').strip())
+    return names
+
+
+def find_dbg_pak(pak_path) -> Path | None:
+    """Look for a dbg.pak beside the source pak (its folder, or a sibling PAK dir)."""
+    pak_path = Path(pak_path)
+    for d in (pak_path.parent, pak_path.parent.parent / "PAK",
+              pak_path.parent.parent / "COMPRESSED" / "PAK"):
+        if not d.exists():
+            continue
+        for c in d.iterdir():
+            if c.is_file() and c.name.lower() in ("dbg.pak.xen", "dbg.pak.ps3"):
+                return c
+    return None
+
+
+def _dbg_stem(path: str):
+    """'c:/gh3/data/models/guitars/guitar_skin_dragon.tvx.ps3' -> 'guitar_skin_dragon'."""
+    base = re.split(r'[\\/]', path.strip())[-1]
+    base = re.sub(r'\.(ps3|xen)$', '', base, flags=re.I)
+    base = re.sub(r'\.(tex|tvx|img|imv|dds|bmp)$', '', base, flags=re.I)
+    base = re.sub(r'[^0-9A-Za-z._-]', '_', base)
+    return base or None
+
+
+# --- individual textures: material-name bridge (script name -> SCN material -> tex) --
+SCN_TYPE = 0x2C3B5ADC
+
+
+def qk(s: str) -> int:
+    """Neversoft QbKey: crc32 of the lowercased, '/'->'\\' normalized string, inverted."""
+    return (zlib.crc32(s.lower().replace('/', '\\').encode()) ^ 0xFFFFFFFF) & 0xFFFFFFFF
+
+
+def find_script_library(start=None):
+    """Locate a neversoft-script-library/gh3 tree by walking up from start/cwd."""
+    seen = []
+    for base in (Path(start) if start else None, Path.cwd(), Path(__file__).resolve().parent):
+        if base is None:
+            continue
+        for d in (base, *base.parents):
+            cand = d / "neversoft-script-library" / "gh3"
+            if cand.is_dir():
+                return cand
+    return None
+
+
+_SCRIPT_TOKEN_CACHE = {}
+
+
+def _script_material_tokens(script_root) -> dict:
+    """{qk(token): token} for every identifier in the .q/.qb scripts (cached per root)."""
+    root = Path(script_root)
+    key = str(root)
+    if key in _SCRIPT_TOKEN_CACHE:
+        return _SCRIPT_TOKEN_CACHE[key]
+    toks = set()
+    for f in root.rglob("*.q*"):
+        if f.suffix.lower() not in (".q", ".qb"):
+            continue
+        try:
+            t = f.read_text(errors="replace")
+        except Exception:
+            continue
+        for m in re.finditer(r'[A-Za-z_][A-Za-z0-9_]{2,80}', t):
+            toks.add(m.group(0))
+    tokq = {qk(t): t for t in toks}
+    _SCRIPT_TOKEN_CACHE[key] = tokq
+    return tokq
+
+
+def _collapse_material(name: str) -> str:
+    """'sys_gem2d_yellow_sys_gem2d_yellow' -> 'sys_gem2d_yellow' (material = tex_tex)."""
+    h = (len(name) - 1) // 2
+    if len(name) % 2 == 1 and name[:h] == name[h + 1:]:
+        return name[:h]
+    return name
+
+
+def material_texture_names(scn_blobs, tex_checksums, tokq, big_endian=True) -> dict:
+    """Map tex-record checksum -> texture name, by reading SCN material records
+    (0410 section, records size-chained at +0xE4) and matching each material id to a
+    script token. Only single-texture materials are used (unambiguous)."""
+    fmt = ">I" if big_endian else "<I"
+    fmtH = ">H" if big_endian else "<H"
+    out = {}
+    for d in scn_blobs:
+        if len(d) < 0x24 or struct.unpack_from(fmtH, d, 0x20)[0] != 0x0410:
+            continue
+        count = struct.unpack_from(fmtH, d, 0x22)[0]
+        off = 0x30
+        for _ in range(count):
+            if off + 0xE8 > len(d):
+                break
+            size = struct.unpack_from(fmt, d, off + 0xE4)[0]
+            if not 0x40 <= size <= 0x4000 or off + size > len(d):
+                break
+            rec = d[off:off + size]
+            mid = struct.unpack_from(fmt, rec, 0)[0]
+            refs = [struct.unpack_from(fmt, rec, o)[0] for o in range(0, size - 3, 4)]
+            real = [w for w in refs if w in tex_checksums]
+            if len(real) == 1 and mid in tokq and real[0] not in out:
+                out[real[0]] = _collapse_material(tokq[mid])
+            off += size
+    return out
+
+
+_BUNDLED_NAMES = None
+
+
+def bundled_names() -> dict:
+    """The shipped checksum->name map (texture_names.json beside this file)."""
+    global _BUNDLED_NAMES
+    if _BUNDLED_NAMES is None:
+        p = Path(__file__).resolve().parent / "texture_names.json"
+        try:
+            _BUNDLED_NAMES = {int(k, 16): v for k, v in json.loads(p.read_text()).items()}
+        except Exception:
+            _BUNDLED_NAMES = {}
+    return _BUNDLED_NAMES
+
+
+def _resolve_names(pak_path, dbg, names, log):
+    """Build the {checksum:name} map: the bundled JSON, plus any dbg.pak found next to
+    the source (a dbg supplements/overrides). An explicit `names` dict wins outright."""
+    if names is not None:
+        return names
+    out = dict(bundled_names())
+    if dbg == "-":                              # explicit: no dbg supplement
+        dbg = None
+    elif dbg is None:
+        dbg = find_dbg_pak(pak_path)
+        if dbg:
+            log(f"found extra names: {Path(dbg).name}")
+    if dbg is not None:
+        try:
+            out.update(load_dbg_names(dbg))
+        except Exception as e:
+            log(f"  (couldn't read dbg names: {e})")
+    if out:
+        log(f"name table: {len(out)} known textures")
+    return out
+
+
+def _png_relpath(kind, key, info, names, multi, used):
+    """Pick a PNG path: real name from dbg/material bridge when known, else 0xchecksum.
+    A record's own name (material bridge / img) wins; else the dictionary path groups it."""
+    container = info.get("container", key)
+    rec_name = names.get(key)                        # this texture's own name
+    cont_name = names.get(container) if container != key else rec_name
+    rec_stem = _dbg_stem(rec_name) if rec_name else None
+    cont_stem = _dbg_stem(cont_name) if cont_name else None
+    if kind == "img":
+        rel = f"img/{rec_stem}" if rec_stem else f"img/0x{key:08x}"
+    else:
+        leaf = rec_stem or f"0x{key:08x}"
+        rel = f"tex/{cont_stem}/{leaf}" if (cont_stem and multi) else f"tex/{leaf}"
+    if rel in used:                                  # same stem from a different container
+        rel = f"{rel}_0x{key:08x}"
+    used.add(rel)
+    return rel + ".png", (rec_name or cont_name)
+
+
+def _png_path(work: Path, mkey: str, info: dict) -> Path:
+    """Locate a texture PNG for repack, honoring a manifest 'png' path (old = mkey.png)."""
+    return work / info.get("png", f"{mkey}.png")
+
+
+def _add_material_names(names, scn_blobs, items, platform, scripts, log):
+    """Enrich `names` via the SCN material bridge. Only runs when a script library is
+    explicitly given -- the bundled name table already carries these, so this is just a
+    dev/override path for regenerating or naming a pak the bundle doesn't cover."""
+    if scripts is None:
+        return names
+    tex_cs = {key for key, kind, *_ in items if kind == "tex"}
+    if not tex_cs or not scn_blobs:
+        return names
+    root = scripts if Path(scripts).is_dir() else find_script_library()
+    if not root or not Path(root).is_dir():
+        return names
+    tokq = _script_material_tokens(root)
+    mat = material_texture_names(scn_blobs, tex_cs, tokq, big_endian=(platform != "pc"))
+    if mat:
+        log(f"named {len(mat)} textures via script materials ({Path(root).name})")
+        for k, v in mat.items():
+            names.setdefault(k, v)
+    return names
 
 
 # --------------------------------------------------------------------------- #
@@ -154,20 +482,26 @@ def _sibling_pab(pak_path: Path) -> Path:
     return pak_path.with_name(pak_path.name.replace(".pak.", ".pab."))
 
 
+def _is_ps3_pak(p: Path) -> bool:
+    n = p.name.lower()
+    return n.endswith(".pak.ps3") and not n.endswith("_vram.pak.ps3")
+
+
 def resolve_pak_path(p) -> Path:
-    """Accept a .pak.xen file, a folder holding one, or a name without extension."""
+    """Accept a .pak.xen / .PAK.PS3 file, a folder holding one, or a name sans ext."""
     p = Path(p)
     if p.is_dir():
-        cands = sorted(p.glob("*.pak.xen"))
+        cands = sorted(p.glob("*.pak.xen")) + sorted(x for x in p.glob("*.[pP][aA][kK].[pP][sS]3") if _is_ps3_pak(x))
         if not cands:
-            raise FileNotFoundError(f"no *.pak.xen found in folder: {p}")
+            raise FileNotFoundError(f"no *.pak.xen or *.PAK.PS3 found in folder: {p}")
         return cands[0]
     if p.is_file():
         return p
-    for cand in (Path(str(p) + ".pak.xen"), p.with_name(p.name + ".pak.xen")):
-        if cand.is_file():
-            return cand
-    raise FileNotFoundError(f"not a .pak.xen file or a folder containing one: {p}")
+    for suf in (".pak.xen", ".PAK.PS3"):
+        for cand in (Path(str(p) + suf), p.with_name(p.name + suf)):
+            if cand.is_file():
+                return cand
+    raise FileNotFoundError(f"not a .pak.xen/.PAK.PS3 file or a folder containing one: {p}")
 
 
 def _load_pair(pak_path: Path):
@@ -179,7 +513,7 @@ def _load_pair(pak_path: Path):
     return SplitPak.from_bytes(pak, pab, pak_path=pak_path, pab_path=pab_path), compressed
 
 
-def unpack(pak_input, out_dir=None, platform=None, log=print) -> int:
+def unpack(pak_input, out_dir=None, platform=None, log=print, dbg=None, names=None, scripts=None) -> int:
     pak_path = resolve_pak_path(pak_input)
     name = pak_path.name.split(".")[0]
     out = Path(out_dir) if out_dir else pak_path.parent   # default: the input folder
@@ -187,33 +521,127 @@ def unpack(pak_input, out_dir=None, platform=None, log=print) -> int:
     (out / "img").mkdir(parents=True, exist_ok=True)
 
     log(f"reading {pak_path.name}")
+    if pak_path.name.lower().endswith(".pak.ps3"):
+        return _unpack_ps3(pak_path, out, name, log, dbg=dbg, names=names, scripts=scripts)
     pair, compressed = _load_pair(pak_path)
     if compressed:
         log("decompressed (raw DEFLATE) in memory")
     if platform is None:
         platform = detect_platform(pair)
     log(f"platform: {platform}")
+    names = _resolve_names(pak_path, dbg, names, log)
 
     manifest = {"name": name, "platform": platform, "sourcePak": pak_path.name,
                 "sourceDir": str(pak_path.parent), "textures": {}}
-    n = 0
-    for key, kind, w, h, img, info in iter_textures(pair, platform):
-        mkey = f"{kind}/0x{key:08x}"                       # tex/... or img/... (own folder)
+    items = list(iter_textures(pair, platform))
+    names = _add_material_names(names, [e.data for e in pair.entries if getattr(e, "type", None) == SCN_TYPE],
+                                items, platform, scripts, log)
+    from collections import Counter
+    counts = Counter(info.get("container", key) for key, kind, w, h, img, info in items)
+    used, n, named = set(), 0, 0
+    for key, kind, w, h, img, info in items:
+        mkey = f"{kind}/0x{key:08x}"                       # tex/... or img/... (stable repack key)
         if mkey in manifest["textures"]:
             mkey = f"{mkey}_{info.get('entryIndex', 'x')}"  # rare cross-entry key collision
-        png = out / f"{mkey}.png"
+        rel, full = _png_relpath(kind, key, info, names, counts[info.get("container", key)] > 1, used)
+        png = out / rel
+        png.parent.mkdir(parents=True, exist_ok=True)
         img.save(png, "PNG")
-        manifest["textures"][mkey] = {"kind": kind, "w": w, "h": h,
-                                      "pngSha256": sha(png.read_bytes()), **info}
+        entry = {"kind": kind, "w": w, "h": h, "pngSha256": sha(png.read_bytes()), "png": rel, **info}
+        if full:
+            entry["name"] = full; named += 1
+        manifest["textures"][mkey] = entry
         n += 1
         if n % 100 == 0:
             log(f"  ...{n} textures")
+    if names:
+        log(f"named {named}/{n} textures (rest keep their checksum)")
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
     nt = sum(1 for v in manifest["textures"].values() if v["kind"] == "tex")
     log(f"unpacked {n} {platform} textures ({nt} in tex/, {n - nt} in img/) -> {out}")
     if platform == "pc":
         log("  (PC unpack is decode-only: copy these PNGs into an Xbox unpack folder, then repack that)")
     return n
+
+
+def _unpack_ps3(pak_path: Path, out: Path, name: str, log=print, dbg=None, names=None, scripts=None) -> int:
+    pak = Ps3Pak(pak_path)
+    if not pak.vram:
+        raise FileNotFoundError(f"missing VRAM pak: {pak.vram_path.name} (PS3 pixels live there)")
+    log(f"platform: ps3  ({pak.pab_path.name if pak.pab else 'monolithic'} + {pak.vram_path.name})")
+    names = _resolve_names(pak_path, dbg, names, log)
+    manifest = {"name": name, "platform": "ps3", "sourcePak": pak_path.name,
+                "sourceDir": str(pak_path.parent), "vramPak": pak.vram_path.name,
+                "textures": {}}
+    items = list(iter_textures_ps3(pak))
+    names = _add_material_names(names, [pak.entry_data(e) for e in pak.entries if e.type == SCN_TYPE],
+                                items, "ps3", scripts, log)
+    from collections import Counter
+    counts = Counter(info.get("container", key) for key, kind, w, h, img, info in items)
+    used, n, named = set(), 0, 0
+    for key, kind, w, h, img, info in items:
+        mkey = f"{kind}/0x{key:08x}"
+        if mkey in manifest["textures"]:
+            mkey = f"{mkey}_{info['vramOffset']:x}"
+        rel, full = _png_relpath(kind, key, info, names, counts[info.get("container", key)] > 1, used)
+        png = out / rel
+        png.parent.mkdir(parents=True, exist_ok=True)
+        img.save(png, "PNG")
+        entry = {"kind": kind, "w": w, "h": h, "pngSha256": sha(png.read_bytes()), "png": rel, **info}
+        if full:
+            entry["name"] = full; named += 1
+        manifest["textures"][mkey] = entry
+        n += 1
+        if n % 100 == 0:
+            log(f"  ...{n} textures")
+    if names:
+        log(f"named {named}/{n} textures (rest keep their checksum)")
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    nt = sum(1 for v in manifest["textures"].values() if v["kind"] == "tex")
+    log(f"unpacked {n} ps3 textures ({nt} in tex/, {n - nt} in img/) -> {out}")
+    return n
+
+
+def _repack_ps3(work: Path, manifest: dict, out_pak, log=print) -> int:
+    name = manifest["name"]
+    src_pak = _resolve_source(work, manifest)
+    pak = Ps3Pak(src_pak)
+    if not pak.vram:
+        raise FileNotFoundError(f"missing VRAM pak next to {src_pak}")
+    vram = bytearray(pak.vram)
+    edited, unchanged, skipped = 0, 0, []
+    for mkey, info in manifest["textures"].items():
+        png = _png_path(work, mkey, info)
+        if not png.exists():
+            skipped.append((mkey, "png missing")); continue
+        if sha(png.read_bytes()) == info["pngSha256"]:
+            unchanged += 1; continue
+        w, h, fourcc = info["w"], info["h"], info["fourCC"]
+        im = Image.open(png).convert("RGBA")
+        if im.size != (w, h):
+            log(f"  resized {mkey} {im.width}x{im.height} -> {w}x{h}")
+            im = im.resize((w, h), Image.LANCZOS)
+        buf = io.BytesIO(); im.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
+        linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(w, h, fourcc)]
+        n = min(len(linear), info["size"])
+        voff = info["vramOffset"]
+        vram[voff:voff + n] = linear[:n]        # linear LE DXT straight in - no transform
+        edited += 1
+        log(f"  re-encoded {mkey} ({w}x{h} {fourcc})")
+    if not edited:
+        log(f"no edited PNGs (unchanged {unchanged}) - nothing to repack"); return 0
+    out_pak = Path(out_pak) if out_pak else work / f"{name}_new.PAK.PS3"
+    stem = out_pak.name[:-8].rstrip('.') if out_pak.name.lower().endswith('.pak.ps3') else out_pak.stem
+    out_pak.parent.mkdir(parents=True, exist_ok=True)
+    out_pak.write_bytes(pak.pak)                                  # header pak verbatim
+    if pak.pab:
+        out_pak.with_name(f"{stem}.PAB.PS3").write_bytes(pak.pab)  # pab verbatim
+    out_pak.with_name(f"{stem}_VRAM.PAK.PS3").write_bytes(bytes(vram))
+    log(f"repacked {edited} edited textures (unchanged {unchanged}, skipped {len(skipped)}) -> {out_pak}")
+    log(f"  wrote: {out_pak.name}" + (f" + {stem}.PAB.PS3" if pak.pab else "") + f" + {stem}_VRAM.PAK.PS3")
+    if skipped:
+        log(f"  skipped: {skipped[:6]}{'...' if len(skipped) > 6 else ''}")
+    return edited
 
 
 def _resolve_source(work: Path, manifest: dict) -> Path:
@@ -230,7 +658,10 @@ def _resolve_source(work: Path, manifest: dict) -> Path:
 def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
     work = Path(work_dir)
     manifest = json.loads((work / "manifest.json").read_text())
-    if manifest.get("platform", "xbox") != "xbox":
+    plat = manifest.get("platform", "xbox")
+    if plat == "ps3":
+        return _repack_ps3(work, manifest, out_pak, log)
+    if plat != "xbox":
         raise ValueError("this is a PC unpack (decode-only) - copy its PNGs into an "
                          "Xbox unpack folder by matching name and repack that instead")
     name = manifest["name"]
@@ -241,7 +672,7 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
     touched, edited, unchanged, skipped = set(), 0, 0, []
 
     for mkey, info in manifest["textures"].items():
-        png = work / f"{mkey}.png"
+        png = _png_path(work, mkey, info)
         if not png.exists():
             skipped.append((mkey, "png missing")); continue
         if sha(png.read_bytes()) == info["pngSha256"]:
