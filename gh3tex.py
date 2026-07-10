@@ -79,6 +79,25 @@ def img_info(data: bytes):
     return w, h, fourcc, 0x1000, stor
 
 
+def pc_tex_records(container: bytes):
+    """Yield (checksum, w, h, dds_offset, size) for a PC FACECAA7 .tex container.
+    PC records are 0x28 bytes (magic 0x0A28) and point at an embedded LE DDS —
+    unlike the console 0x30-byte records that hold tiled DXT."""
+    if len(container) < 0x10 or container[:4] != b"\xfa\xce\xca\xa7":
+        return
+    count = u16be(container, 6)
+    recs_off = struct.unpack_from(">I", container, 8)[0]
+    for i in range(count):
+        r = container[recs_off + i*0x28: recs_off + (i+1)*0x28]
+        if len(r) < 0x28 or r[:2] != b"\x0a\x28":
+            break
+        checksum = struct.unpack_from(">I", r, 4)[0]
+        w, h = u16be(r, 8), u16be(r, 10)
+        off = struct.unpack_from(">I", r, 0x1C)[0]
+        size = struct.unpack_from(">I", r, 0x20)[0]
+        yield checksum, w, h, off, size
+
+
 def dds_bytes_to_png(dds_bytes: bytes, png_path: Path):
     Image.open(io.BytesIO(dds_bytes)).save(png_path, "PNG")
 
@@ -257,7 +276,11 @@ def iter_textures(pair: SplitPak, platform: str):
                            {"entryIndex": e.index, "dataOffset": poff, "size": stor, "fourCC": fourcc})
         elif t == TYPE_TEX:
             if platform == "pc":
-                continue   # PC TEX atlas (e.g. global_gfx) not yet split into records
+                for cs, w, h, off, size in pc_tex_records(e.data):
+                    img = _pc_image(e.data[off:off + size])
+                    if img is not None:
+                        yield (cs, "tex", img.width, img.height, img, {"container": e.full_name})
+                continue
             try:
                 recs = XboxTex.parse(e.data).records
             except Exception:
