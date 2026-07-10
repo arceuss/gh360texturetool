@@ -24,6 +24,7 @@ from tools.x360pak._consult_single import (
     SplitPak, XboxTex, TYPE_TEX, PakEntry,
     dds_info, top_mip_size, xbox_storage_size,
     tile_xbox360_dxt, untile_xbox360_dxt, write_dds_bytes, DDS_HEADER_SIZE, u16be,
+    make_meta_record, make_chunk_record, TEX_META_RECORD_SIZE, TEX_CHUNK_RECORD_SIZE,
 )
 
 TYPE_IMG = 0xdad5e950
@@ -194,19 +195,94 @@ def _ps3_image(linear: bytes, w: int, h: int, fourcc: str):
         return None
 
 
-def _encode_ps3_mipchain(im: Image.Image, w: int, h: int, fourcc: str, mips: int) -> bytes:
-    """Encode a full linear DXT mip chain (top first) from an edited RGBA image, so
-    minified sampling shows the new texture instead of the stale original mips."""
+def _mip_downsample(im: Image.Image, dw: int, dh: int) -> Image.Image:
+    """Downsample the top image to a mip level. BOX (area-average) matches the
+    Neversoft box-reduce the game used and avoids LANCZOS edge-ringing crust."""
+    return im if im.size == (dw, dh) else im.resize((dw, dh), Image.BOX)
+
+
+def _texconv_encode_chain(levels, fourcc: str):
+    """Encode a list of already-downsampled RGBA mip images to a linear DXT chain
+    using the bundled texconv.exe (DirectXTex compressor -- cleaner blocks / far
+    less mip banding than Pillow). Downsampling is done by the caller (Pillow BOX),
+    so texconv only compresses each level as-is (-m 1, no resample). Returns the
+    concatenated linear chain, or None if texconv is missing/failed (caller falls
+    back to Pillow)."""
+    exe = Path(__file__).resolve().parent / "bin" / "texconv.exe"
+    if not exe.exists():
+        return None
+    import subprocess, tempfile, shutil
+    td = Path(tempfile.mkdtemp())
+    try:
+        for i, lvl in enumerate(levels):
+            lvl.save(td / f"L{i}.png")
+        names = [f"L{i}.png" for i in range(len(levels))]
+        try:
+            r = subprocess.run([str(exe), "-f", "DXT5" if fourcc == "DXT5" else "DXT1",
+                                "-m", "1", "-o", str(td), "-y", *names],
+                               cwd=str(td), capture_output=True)
+        except OSError:
+            return None  # exe present but failed to launch (e.g. missing VC++ runtime)
+        if r.returncode != 0:
+            return None
+        out = bytearray()
+        for i, lvl in enumerate(levels):
+            dds = None
+            for ext in ("DDS", "dds"):
+                p = td / f"L{i}.{ext}"
+                if p.exists():
+                    dds = p.read_bytes(); break
+            if dds is None:
+                return None
+            hdr = 128 + (20 if dds[84:88] == b"DX10" else 0)
+            out += dds[hdr:hdr + top_mip_size(lvl.width, lvl.height, fourcc)]
+        return bytes(out)
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def _gen_mipchain_le(im: Image.Image, w: int, h: int, fourcc: str, mips: int) -> bytes:
+    """Full linear little-endian DXT mip chain (top first), each level downsampled
+    from the top image. Shared by PS3 (written straight to VRAM) and 360 (fed to
+    xgtool for correct tiling incl. the packed mip tail)."""
+    levels = [_mip_downsample(im, max(1, w >> i), max(1, h >> i)) for i in range(mips)]
+    tc = _texconv_encode_chain(levels, fourcc)
+    if tc is not None:
+        return tc
     pf = PIL_PIXFMT[fourcc]
     out = bytearray()
-    for i in range(mips):
-        lw, lh = max(1, w >> i), max(1, h >> i)
-        # BOX (area-average) matches the game's mip generation and avoids the LANCZOS
-        # edge ringing that made regenerated mips look crusty.
-        lvl = im if (lw, lh) == im.size else im.resize((lw, lh), Image.BOX)
+    for lvl in levels:
         buf = io.BytesIO(); lvl.save(buf, format="DDS", pixel_format=pf)
-        out += buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(lw, lh, fourcc)]
+        out += buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(lvl.width, lvl.height, fourcc)]
     return bytes(out)
+
+
+def _encode_ps3_mipchain(im, w, h, fourcc, mips):
+    return _gen_mipchain_le(im, w, h, fourcc, mips)
+
+
+def _xgtool_tile(chain_le: bytes, base_record: bytes, w: int, h: int, mips: int, fourcc: str):
+    """Tile a linear DXT mip chain into a 360 record with the bundled xgtool.exe
+    (real XGraphics -> exact tiling + packed mip tail). Returns the tiled record,
+    or None if xgtool is missing/failed (caller falls back to top-mip-only)."""
+    exe = Path(__file__).resolve().parent / "bin" / "xgtool.exe"
+    if not exe.exists():
+        return None
+    import subprocess, tempfile, shutil
+    td = Path(tempfile.mkdtemp())
+    try:
+        (td / "lin").write_bytes(chain_le)
+        (td / "base").write_bytes(base_record)
+        r = subprocess.run([str(exe), "tile", str(w), str(h), str(mips),
+                            "dxt5" if fourcc == "DXT5" else "dxt1",
+                            str(td / "lin"), str(td / "base"), str(td / "out")],
+                           capture_output=True)
+        if r.returncode != 0 or not (td / "out").exists():
+            return None
+        out = (td / "out").read_bytes()
+        return out if len(out) == len(base_record) else None
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
 
 
 def iter_textures_ps3(pak: Ps3Pak):
@@ -708,25 +784,61 @@ def _resolve_source(work: Path, manifest: dict) -> Path:
 
 
 def _write_xbox_mipchain(dst: bytearray, off: int, im: Image.Image, w: int, h: int,
-                         fourcc: str, mip_count: int, rec_size: int) -> int:
-    """Tile+write each full-tile mip at its cumulative xbox_storage_size offset so the
-    whole visible mip chain shows the edited texture. The tiny sub-tile mips are packed
-    into a tail region (offset+storage would overflow the record) — those are left as the
-    original bytes (imperceptible at that size), which is safe vs. mis-packing garbage."""
-    written, cur = 0, 0
-    for i in range(mip_count):
-        lw, lh = max(1, w >> i), max(1, h >> i)
-        st = xbox_storage_size(lw, lh, fourcc)
-        if cur + st > rec_size:
-            break
-        lvl = im if (lw, lh) == im.size else im.resize((lw, lh), Image.BOX)
-        buf = io.BytesIO(); lvl.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
-        linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(lw, lh, fourcc)]
-        base = bytes(dst[off + cur:off + cur + st])
-        tiled = tile_xbox360_dxt(linear, lw, lh, fourcc, word_swap=True, base_data=base)
-        dst[off + cur:off + cur + st] = tiled[:st]
-        cur += st; written += 1
-    return written
+                         fourcc: str, mip_count: int, rec_size: int) -> bool:
+    """Rewrite the whole tiled record (all mips incl. the packed tail) from the edited
+    image via xgtool (real XGraphics). Returns True on success, False if xgtool is
+    unavailable so the caller can fall back to a top-mip-only write."""
+    # need room for the mip allocation beyond the base tile; if the record only holds the
+    # base (mip0 fills the whole tile, or a shared/odd record), fall back to top-only.
+    if rec_size <= xbox_storage_size(w, h, fourcc):
+        return False
+    chain = _gen_mipchain_le(im, w, h, fourcc, mip_count)
+    tiled = _xgtool_tile(chain, bytes(dst[off:off + rec_size]), w, h, mip_count, fourcc)
+    if tiled is None:
+        return False
+    dst[off:off + rec_size] = tiled
+    return True
+
+
+def _grow_tex_records(container: bytes, edits: dict) -> bytes:
+    """Replace one or more records in a FACECAA7 TEX container with new-size art by
+    APPENDING each new payload past the existing data and re-pointing only that
+    record's meta+chunk. Every other record keeps its exact bytes/offset (mips and
+    aliasing intact). Grown records are single-mip. edits: checksum -> (w, h, fourcc,
+    linear_top_dxt)."""
+    tex = XboxTex.parse(container)
+    by_cs = {r.checksum: r for r in tex.records}
+    out = bytearray(container)
+    for cs, (w, h, fourcc) in ((k, v[:3]) for k, v in edits.items()):
+        linear = edits[cs][3]
+        r = by_cs[cs]
+        payload = tile_xbox360_dxt(linear, w, h, fourcc, word_swap=True)
+        out += bytes((-len(out)) % 0x1000)           # align append start
+        data_offset = len(out)
+        out += payload
+        out += bytes((-len(out)) % 0x1000)           # keep container 0x1000-aligned
+        rec = make_meta_record(cs, w, h, fourcc, r.chunk_offset, data_offset,
+                               len(payload), template=r.raw_record)
+        out[r.record_offset:r.record_offset + TEX_META_RECORD_SIZE] = rec
+        ch = make_chunk_record(w, h, fourcc, template=r.raw_chunk)
+        out[r.chunk_offset:r.chunk_offset + TEX_CHUNK_RECORD_SIZE] = ch
+    return bytes(out)
+
+
+def _grow_img_entry(entry: bytes, w: int, h: int, fourcc: str, linear_top: bytes) -> bytes:
+    """Rebuild a standalone .img entry (0x1000 header + tiled payload) at new dims.
+    Patches both width/height fields + the size field in the header and rewrites the
+    chunk record, then tiles the single-mip payload. Payload lives at 0x1000."""
+    out = bytearray(entry[:0x1000])
+    struct.pack_into(">HH", out, 8, w, h)            # primary w/h
+    struct.pack_into(">HH", out, 0x0e, w, h)         # mirrored w/h
+    struct.pack_into(">I", out, 32, xbox_storage_size(w, h, fourcc))
+    ci = out.find(_CHUNK_MAGIC)
+    if ci >= 0:
+        out[ci:ci + TEX_CHUNK_RECORD_SIZE] = make_chunk_record(
+            w, h, fourcc, template=bytes(out[ci:ci + TEX_CHUNK_RECORD_SIZE]))
+    out += tile_xbox360_dxt(linear_top, w, h, fourcc, word_swap=True)
+    return bytes(out)
 
 
 def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
@@ -745,15 +857,16 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
     ent = {e.index: bytearray(e.data) for e in pair.entries}
     # mip count per TEX-record checksum from the source (fixes multi-mip textures whose
     # lower levels would otherwise keep the original art; old manifests handled too).
-    mipcount = {}
+    mipcount = {}   # checksum -> (mip_count, full_record_size) from the source
     for e in pair.entries:
         if getattr(e, "type", None) == TYPE_TEX:
             try:
                 for r in XboxTex.parse(e.data).records:
-                    mipcount[r.checksum] = r.mip_count
+                    mipcount[r.checksum] = (r.mip_count, r.size)
             except Exception:
                 pass
     touched, edited, unchanged, skipped = set(), 0, 0, []
+    tex_grow = {}   # container entryIndex -> {checksum: (w, h, fourcc, linear_top)}
 
     for mkey, info in manifest["textures"].items():
         png = _png_path(work, mkey, info)
@@ -765,16 +878,29 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
         if fourcc not in PIL_PIXFMT:
             skipped.append((mkey, f"{fourcc} has no PNG codec")); continue
         im = Image.open(png).convert("RGBA")
-        if im.size != (w, h):                       # e.g. a merged PC texture of another size
-            log(f"  resized {mkey} {im.width}x{im.height} -> {w}x{h}")
-            im = im.resize((w, h), Image.LANCZOS)
         eidx, off = info["entryIndex"], info["dataOffset"]
         cs = int(mkey.split("0x")[-1], 16) if "0x" in mkey else None
-        mips = mipcount.get(cs, 1) if mkey.startswith("tex/") else 1
-        if mips > 1:
-            nlv = _write_xbox_mipchain(ent[eidx], off, im, w, h, fourcc, mips, info["size"])
+
+        if im.size != (w, h):
+            # replacement at a different resolution: the game reads dims from the header,
+            # so re-point the texture to a fresh single-mip payload at the new size (img
+            # entries grow in place; tex-container records get appended + reflowed).
+            nw, nh = im.size
+            if min(nw, nh) < 4:   # sub DXT-block: almost certainly a broken export - keep original
+                skipped.append((mkey, f"degenerate size {nw}x{nh}, kept original")); continue
+            linear = _gen_mipchain_le(im, nw, nh, fourcc, 1)
+            if mkey.startswith("img/"):
+                ent[eidx] = bytearray(_grow_img_entry(bytes(ent[eidx]), nw, nh, fourcc, linear))
+                touched.add(eidx); edited += 1
+                log(f"  resized {mkey} {w}x{h} -> {nw}x{nh} {fourcc} (single mip)")
+            else:
+                tex_grow.setdefault(eidx, {})[cs] = (nw, nh, fourcc, linear)
+            continue
+
+        mips, rec_size = mipcount.get(cs, (1, info["size"])) if mkey.startswith("tex/") else (1, info["size"])
+        if mips > 1 and _write_xbox_mipchain(ent[eidx], off, im, w, h, fourcc, mips, rec_size):
             touched.add(eidx); edited += 1
-            log(f"  re-encoded {mkey} ({w}x{h} {fourcc}, {nlv} mip levels)")
+            log(f"  re-encoded {mkey} ({w}x{h} {fourcc}, {mips} mips)")
         else:
             buf = io.BytesIO(); im.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
             linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(w, h, fourcc)]
@@ -784,7 +910,14 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
             nbytes = min(len(payload), info["size"])
             ent[eidx][off:off + nbytes] = payload[:nbytes]
             touched.add(eidx); edited += 1
-            log(f"  re-encoded {mkey} ({w}x{h} {fourcc})")
+            log(f"  re-encoded {mkey} ({w}x{h} {fourcc}{' (top only, xgtool missing)' if mips > 1 else ''})")
+
+    # apply tex-container grows last, on top of any in-place edits to the same container
+    for eidx, cont_edits in tex_grow.items():
+        ent[eidx] = bytearray(_grow_tex_records(bytes(ent[eidx]), cont_edits))
+        touched.add(eidx); edited += len(cont_edits)
+        for cs, (nw, nh, fc, _lin) in cont_edits.items():
+            log(f"  grew tex 0x{cs:08x} -> {nw}x{nh} {fc} (single mip, appended)")
 
     if not edited:
         log(f"no edited PNGs (unchanged {unchanged}) - nothing to repack"); return 0

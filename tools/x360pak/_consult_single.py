@@ -309,6 +309,7 @@ class XboxTex:
         meta_start = u32be(data, 8)
         chunk_end = u32be(data, 12)
         records: List[TexRecord] = []
+        _ALL_TEX_OFFS = sorted({u32be(data[meta_start+j*TEX_META_RECORD_SIZE:meta_start+(j+1)*TEX_META_RECORD_SIZE],36) for j in range(count)})
         for i in range(count):
             off = meta_start + i * TEX_META_RECORD_SIZE
             raw = data[off:off + TEX_META_RECORD_SIZE]
@@ -317,6 +318,9 @@ class XboxTex:
             chunk_offset = u32be(raw, 28)
             size = u32be(raw, 32)
             data_offset = u32be(raw, 36)
+            end_offset = u32be(raw, 24)
+            if size == 0:
+                size = next((o for o in _ALL_TEX_OFFS if o > data_offset), len(data)) - data_offset
             raw_chunk = data[chunk_offset:chunk_offset + TEX_CHUNK_RECORD_SIZE]
             payload = data[data_offset:data_offset + size]
             if len(raw_chunk) != TEX_CHUNK_RECORD_SIZE:
