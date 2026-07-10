@@ -194,6 +194,21 @@ def _ps3_image(linear: bytes, w: int, h: int, fourcc: str):
         return None
 
 
+def _encode_ps3_mipchain(im: Image.Image, w: int, h: int, fourcc: str, mips: int) -> bytes:
+    """Encode a full linear DXT mip chain (top first) from an edited RGBA image, so
+    minified sampling shows the new texture instead of the stale original mips."""
+    pf = PIL_PIXFMT[fourcc]
+    out = bytearray()
+    for i in range(mips):
+        lw, lh = max(1, w >> i), max(1, h >> i)
+        # BOX (area-average) matches the game's mip generation and avoids the LANCZOS
+        # edge ringing that made regenerated mips look crusty.
+        lvl = im if (lw, lh) == im.size else im.resize((lw, lh), Image.BOX)
+        buf = io.BytesIO(); lvl.save(buf, format="DDS", pixel_format=pf)
+        out += buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(lw, lh, fourcc)]
+    return bytes(out)
+
+
 def iter_textures_ps3(pak: Ps3Pak):
     """Yield (key, kind, w, h, PIL_image, repack_info) for a PS3 pak.
     repack_info records the absolute VRAM-file offset + byte count to overwrite."""
@@ -632,6 +647,13 @@ def _repack_ps3(work: Path, manifest: dict, out_pak, log=print) -> int:
     if not pak.vram:
         raise FileNotFoundError(f"missing VRAM pak next to {src_pak}")
     vram = bytearray(pak.vram)
+    # mip layout per texture checksum from the SOURCE pak, so multi-mip textures get
+    # their whole chain rewritten (old manifests lacking mip fields are fixed too).
+    mipinfo = {}
+    for e in pak.entries:
+        if e.type == TYPE_TEX:
+            for cs, tw, th, mips, fc, roff, rsz in ps3_tex_records(pak.entry_data(e)):
+                mipinfo[cs] = (mips, rsz)
     edited, unchanged, skipped = 0, 0, []
     for mkey, info in manifest["textures"].items():
         png = _png_path(work, mkey, info)
@@ -644,13 +666,20 @@ def _repack_ps3(work: Path, manifest: dict, out_pak, log=print) -> int:
         if im.size != (w, h):
             log(f"  resized {mkey} {im.width}x{im.height} -> {w}x{h}")
             im = im.resize((w, h), Image.LANCZOS)
-        buf = io.BytesIO(); im.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
-        linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(w, h, fourcc)]
-        n = min(len(linear), info["size"])
+        cs = int(mkey.split("0x")[-1], 16) if "0x" in mkey else None
+        mips, chain_size = mipinfo.get(cs, (1, info["size"]))
+        if mips > 1:
+            linear = _encode_ps3_mipchain(im, w, h, fourcc, mips)
+            cap = chain_size
+        else:
+            buf = io.BytesIO(); im.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
+            linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(w, h, fourcc)]
+            cap = info["size"]
+        n = min(len(linear), cap)
         voff = info["vramOffset"]
         vram[voff:voff + n] = linear[:n]        # linear LE DXT straight in - no transform
         edited += 1
-        log(f"  re-encoded {mkey} ({w}x{h} {fourcc})")
+        log(f"  re-encoded {mkey} ({w}x{h} {fourcc}{f', {mips} mips' if mips > 1 else ''})")
     if not edited:
         log(f"no edited PNGs (unchanged {unchanged}) - nothing to repack"); return 0
     out_pak = Path(out_pak) if out_pak else work / f"{name}_new.PAK.PS3"
@@ -678,6 +707,28 @@ def _resolve_source(work: Path, manifest: dict) -> Path:
         f"{manifest.get('sourceDir')!r}). Keep the original .pak.xen/.pab.xen there.")
 
 
+def _write_xbox_mipchain(dst: bytearray, off: int, im: Image.Image, w: int, h: int,
+                         fourcc: str, mip_count: int, rec_size: int) -> int:
+    """Tile+write each full-tile mip at its cumulative xbox_storage_size offset so the
+    whole visible mip chain shows the edited texture. The tiny sub-tile mips are packed
+    into a tail region (offset+storage would overflow the record) — those are left as the
+    original bytes (imperceptible at that size), which is safe vs. mis-packing garbage."""
+    written, cur = 0, 0
+    for i in range(mip_count):
+        lw, lh = max(1, w >> i), max(1, h >> i)
+        st = xbox_storage_size(lw, lh, fourcc)
+        if cur + st > rec_size:
+            break
+        lvl = im if (lw, lh) == im.size else im.resize((lw, lh), Image.BOX)
+        buf = io.BytesIO(); lvl.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
+        linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(lw, lh, fourcc)]
+        base = bytes(dst[off + cur:off + cur + st])
+        tiled = tile_xbox360_dxt(linear, lw, lh, fourcc, word_swap=True, base_data=base)
+        dst[off + cur:off + cur + st] = tiled[:st]
+        cur += st; written += 1
+    return written
+
+
 def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
     work = Path(work_dir)
     manifest = json.loads((work / "manifest.json").read_text())
@@ -692,6 +743,16 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
     log(f"reading source {src.name}")
     pair, _ = _load_pair(src)
     ent = {e.index: bytearray(e.data) for e in pair.entries}
+    # mip count per TEX-record checksum from the source (fixes multi-mip textures whose
+    # lower levels would otherwise keep the original art; old manifests handled too).
+    mipcount = {}
+    for e in pair.entries:
+        if getattr(e, "type", None) == TYPE_TEX:
+            try:
+                for r in XboxTex.parse(e.data).records:
+                    mipcount[r.checksum] = r.mip_count
+            except Exception:
+                pass
     touched, edited, unchanged, skipped = set(), 0, 0, []
 
     for mkey, info in manifest["textures"].items():
@@ -707,17 +768,23 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
         if im.size != (w, h):                       # e.g. a merged PC texture of another size
             log(f"  resized {mkey} {im.width}x{im.height} -> {w}x{h}")
             im = im.resize((w, h), Image.LANCZOS)
-        buf = io.BytesIO(); im.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
-        dds = buf.getvalue()
-        linear = dds[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(w, h, fourcc)]
         eidx, off = info["entryIndex"], info["dataOffset"]
-        stor = xbox_storage_size(w, h, fourcc)
-        base = bytes(ent[eidx][off:off + stor])
-        payload = tile_xbox360_dxt(linear, w, h, fourcc, word_swap=True, base_data=base)
-        nbytes = min(len(payload), info["size"])
-        ent[eidx][off:off + nbytes] = payload[:nbytes]
-        touched.add(eidx); edited += 1
-        log(f"  re-encoded {mkey} ({w}x{h} {fourcc})")
+        cs = int(mkey.split("0x")[-1], 16) if "0x" in mkey else None
+        mips = mipcount.get(cs, 1) if mkey.startswith("tex/") else 1
+        if mips > 1:
+            nlv = _write_xbox_mipchain(ent[eidx], off, im, w, h, fourcc, mips, info["size"])
+            touched.add(eidx); edited += 1
+            log(f"  re-encoded {mkey} ({w}x{h} {fourcc}, {nlv} mip levels)")
+        else:
+            buf = io.BytesIO(); im.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
+            linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(w, h, fourcc)]
+            stor = xbox_storage_size(w, h, fourcc)
+            base = bytes(ent[eidx][off:off + stor])
+            payload = tile_xbox360_dxt(linear, w, h, fourcc, word_swap=True, base_data=base)
+            nbytes = min(len(payload), info["size"])
+            ent[eidx][off:off + nbytes] = payload[:nbytes]
+            touched.add(eidx); edited += 1
+            log(f"  re-encoded {mkey} ({w}x{h} {fourcc})")
 
     if not edited:
         log(f"no edited PNGs (unchanged {unchanged}) - nothing to repack"); return 0
