@@ -1041,10 +1041,9 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
         if im.size != (w, h):
             # replacement at a different resolution: the game reads dims from the header,
             # so re-point the texture to a fresh single-mip payload at the new size (img
-            # entries grow in place; tex-container records get appended + reflowed).
+            # entries grow in place; tex-container records get appended + reflowed). Any
+            # size is honored, incl. 1x1 (a legit trick to hide an element like flames).
             nw, nh = im.size
-            if min(nw, nh) < 4:   # sub DXT-block: almost certainly a broken export - keep original
-                skipped.append((mkey, f"degenerate size {nw}x{nh}, kept original")); continue
             linear = _gen_mipchain_le(im, nw, nh, fourcc, 1)
             if mkey.startswith("img/"):
                 ent[eidx] = bytearray(_grow_img_entry(bytes(ent[eidx]), nw, nh, fourcc, linear))
