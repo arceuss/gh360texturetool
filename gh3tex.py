@@ -241,44 +241,10 @@ def _texconv_encode_chain(levels, fourcc: str):
         shutil.rmtree(td, ignore_errors=True)
 
 
-def _alpha_bleed(im: Image.Image) -> Image.Image:
-    """Dilate RGB into fully-transparent texels before DXT encode. DXT blocks share
-    color endpoints across the whole 4x4 cell, so black transparent texels darken the
-    visible edge of soft glows (withered halos). Encode-time only - PNGs untouched.
-    Needs numpy; silently skipped if unavailable."""
-    try:
-        import numpy as np
-    except ImportError:
-        return im
-    a = np.asarray(im.convert("RGBA")).astype(float)
-    alpha = a[..., 3]
-    known = alpha > 8
-    if known.all() or not known.any():
-        return im
-    rgb = a[..., :3]
-    for _ in range(16):
-        if known.all():
-            break
-        acc = np.zeros_like(rgb); cnt = np.zeros(alpha.shape)
-        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
-            k = np.roll(known, (dy, dx), (0, 1)); v = np.roll(rgb, (dy, dx), (0, 1))
-            if dy: k[(0 if dy > 0 else -1), :] = False
-            if dx: k[:, (0 if dx > 0 else -1)] = False
-            acc += v * k[..., None]; cnt += k
-        fill = (~known) & (cnt > 0)
-        if not fill.any():
-            break
-        rgb[fill] = acc[fill] / cnt[fill][:, None]
-        known |= fill
-    a[..., :3] = rgb
-    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "RGBA")
-
-
 def _gen_mipchain_le(im: Image.Image, w: int, h: int, fourcc: str, mips: int) -> bytes:
     """Full linear little-endian DXT mip chain (top first), each level downsampled
     from the top image. Shared by PS3 (written straight to VRAM) and 360 (fed to
     xgtool for correct tiling incl. the packed mip tail)."""
-    im = _alpha_bleed(im)
     levels = [_mip_downsample(im, max(1, w >> i), max(1, h >> i)) for i in range(mips)]
     tc = _texconv_encode_chain(levels, fourcc)
     if tc is not None:
