@@ -33,9 +33,22 @@ reads dimensions from the texture header, so a higher-res sidebar/HUD element ju
 `img/` entries grow in place; records inside a `.tex` container (e.g. `sys_sidebar2D` in
 global_gfx) get their new payload appended past the existing data and re-pointed, so every
 other texture keeps its exact bytes (mips + aliasing intact). Resized textures are written
-**single-mip** — fine for HUD/menu/sidebar art, which renders near 1:1 on screen. A PNG
-that collapsed below one DXT block (under 4px) is treated as a broken export and skipped
-(original kept), so an accidental 1×1 save can't wipe a texture.
+**single-mip** — fine for HUD/menu/sidebar art, which renders near 1:1 on screen. Any size
+is honored, including **1×1** — a legit trick to hide an element (e.g. star-power flames);
+the new size is shown in the repack log so an accidental shrink is still visible.
+
+### sidebar 1:1 fix (PC -> 360)
+The 360 engine draws the highway sidebar sprite on a different quad than GH3 PC
+(lower, larger, wider), so a PC theme's sidebar renders ~20px inward and thicker on
+console. `fix_sidebar_360.py` warps the texture through an empirically calibrated
+field (measured with a calibration texture on real hardware + GH3 PC; validated to
+~0.5px) so the 360 render matches PC pixel-for-pixel:
+```
+py fix_sidebar_360.py sys_sidebar2D.png            # writes sys_sidebar2D_360fix.png
+py fix_sidebar_360.py --unpack <unpack folder>     # patch in place, then repack
+```
+Needs `sidebar_360_warp.npz` beside the script. Calibrated for the 400x512 sidebar
+canvas (Rainbow Zones) at 720p.
 
 ### scn pivots (HUD element positions)
 Where a HUD element sits on screen (e.g. the sidebar) lives in the `.scn` scene
@@ -55,7 +68,7 @@ that name is still the repack key, so renaming/rebuilding always works. Custom t
 (e.g. MISC taps that never existed in vanilla) stay as checksums.
 
 Regenerating the map (dev only — needs the reference game data + script library):
-`py -3.11 build_texture_names.py`. It merges each platform's `dbg.pak` (file/container
+`py build_texture_names.py`. It merges each platform's `dbg.pak` (file/container
 names) with the SCN material bridge (individual note/gem/HUD names, resolved via the
 `neversoft-script-library` scripts). You can also point unpack at a live `dbg.pak`
 (4th arg) or pass `-` to use the bundled map only.
