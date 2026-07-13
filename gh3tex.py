@@ -241,10 +241,44 @@ def _texconv_encode_chain(levels, fourcc: str):
         shutil.rmtree(td, ignore_errors=True)
 
 
+def _alpha_bleed(im: Image.Image) -> Image.Image:
+    """Dilate RGB into fully-transparent texels before DXT encode. DXT blocks share
+    color endpoints across the whole 4x4 cell, so black transparent texels darken the
+    visible edge of soft glows (withered halos). Encode-time only - PNGs untouched.
+    Needs numpy; silently skipped if unavailable."""
+    try:
+        import numpy as np
+    except ImportError:
+        return im
+    a = np.asarray(im.convert("RGBA")).astype(float)
+    alpha = a[..., 3]
+    known = alpha > 8
+    if known.all() or not known.any():
+        return im
+    rgb = a[..., :3]
+    for _ in range(16):
+        if known.all():
+            break
+        acc = np.zeros_like(rgb); cnt = np.zeros(alpha.shape)
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            k = np.roll(known, (dy, dx), (0, 1)); v = np.roll(rgb, (dy, dx), (0, 1))
+            if dy: k[(0 if dy > 0 else -1), :] = False
+            if dx: k[:, (0 if dx > 0 else -1)] = False
+            acc += v * k[..., None]; cnt += k
+        fill = (~known) & (cnt > 0)
+        if not fill.any():
+            break
+        rgb[fill] = acc[fill] / cnt[fill][:, None]
+        known |= fill
+    a[..., :3] = rgb
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "RGBA")
+
+
 def _gen_mipchain_le(im: Image.Image, w: int, h: int, fourcc: str, mips: int) -> bytes:
     """Full linear little-endian DXT mip chain (top first), each level downsampled
     from the top image. Shared by PS3 (written straight to VRAM) and 360 (fed to
     xgtool for correct tiling incl. the packed mip tail)."""
+    im = _alpha_bleed(im)
     levels = [_mip_downsample(im, max(1, w >> i), max(1, h >> i)) for i in range(mips)]
     tc = _texconv_encode_chain(levels, fourcc)
     if tc is not None:
@@ -873,8 +907,7 @@ def _repack_ps3(work: Path, manifest: dict, out_pak, log=print) -> int:
             linear = _encode_ps3_mipchain(im, w, h, fourcc, mips)
             cap = chain_size
         else:
-            buf = io.BytesIO(); im.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
-            linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(w, h, fourcc)]
+            linear = _gen_mipchain_le(im, w, h, fourcc, 1)   # texconv + alpha bleed (pillow fallback)
             cap = info["size"]
         n = min(len(linear), cap)
         voff = info["vramOffset"]
@@ -989,6 +1022,7 @@ def _grow_img_entry(entry: bytes, w: int, h: int, fourcc: str, linear_top: bytes
     out = bytearray(entry[:0x1000])
     struct.pack_into(">HH", out, 8, w, h)            # primary w/h
     struct.pack_into(">HH", out, 0x0e, w, h)         # mirrored w/h
+    out[20] = 1                                      # grown payload is single-mip
     struct.pack_into(">I", out, 32, xbox_storage_size(w, h, fourcc))
     ci = out.find(_CHUNK_MAGIC)
     if ci >= 0:
@@ -1053,13 +1087,20 @@ def repack(work_dir, out_pak=None, out_pab=None, log=print) -> int:
                 tex_grow.setdefault(eidx, {})[cs] = (nw, nh, fourcc, linear)
             continue
 
-        mips, rec_size = mipcount.get(cs, (1, info["size"])) if mkey.startswith("tex/") else (1, info["size"])
+        if mkey.startswith("tex/"):
+            mips, rec_size = mipcount.get(cs, (1, info["size"]))
+        else:
+            # img entries carry their mip count at header byte 20 (same 40-byte meta
+            # layout as tex records); the chain lives in the payload after the top tile.
+            mips = ent[eidx][20] if len(ent[eidx]) > 20 else 1
+            rec_size = len(ent[eidx]) - off
+            if mips <= 1 or rec_size <= xbox_storage_size(w, h, fourcc):
+                mips, rec_size = 1, info["size"]
         if mips > 1 and _write_xbox_mipchain(ent[eidx], off, im, w, h, fourcc, mips, rec_size):
             touched.add(eidx); edited += 1
             log(f"  re-encoded {mkey} ({w}x{h} {fourcc}, {mips} mips)")
         else:
-            buf = io.BytesIO(); im.save(buf, format="DDS", pixel_format=PIL_PIXFMT[fourcc])
-            linear = buf.getvalue()[DDS_HEADER_SIZE:DDS_HEADER_SIZE + top_mip_size(w, h, fourcc)]
+            linear = _gen_mipchain_le(im, w, h, fourcc, 1)   # texconv + alpha bleed (pillow fallback)
             stor = xbox_storage_size(w, h, fourcc)
             base = bytes(ent[eidx][off:off + stor])
             payload = tile_xbox360_dxt(linear, w, h, fourcc, word_swap=True, base_data=base)
